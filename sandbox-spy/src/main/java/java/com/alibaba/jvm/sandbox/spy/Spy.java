@@ -25,8 +25,7 @@ public class Spy {
      */
     public static volatile boolean isSpyThrowException = false;
 
-    private static final ConcurrentHashMap<String, SpyHandler> namespaceSpyHandlerMap
-            = new ConcurrentHashMap<String, SpyHandler>();
+    private static final ConcurrentHashMap<String, SpyHandler> namespaceSpyHandlerMap = new ConcurrentHashMap<String, SpyHandler>();
 
     /**
      * 判断间谍类是否已经完成初始化
@@ -45,8 +44,7 @@ public class Spy {
      * @param spyHandler 间谍处理器
      * @since {@code sandbox-spy:1.3.0}
      */
-    public static void init(final String namespace,
-                            final SpyHandler spyHandler) {
+    public static void init(final String namespace, final SpyHandler spyHandler) {
         namespaceSpyHandlerMap.putIfAbsent(namespace, spyHandler);
     }
 

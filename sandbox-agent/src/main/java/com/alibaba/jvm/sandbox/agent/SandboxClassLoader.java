@@ -19,8 +19,7 @@ class SandboxClassLoader extends URLClassLoader {
     private final String toString;
     private final String path;
 
-    SandboxClassLoader(final String namespace,
-                       final String sandboxCoreJarFilePath) throws MalformedURLException {
+    SandboxClassLoader(final String namespace, final String sandboxCoreJarFilePath) throws MalformedURLException {
         super(new URL[]{new URL("file:" + sandboxCoreJarFilePath)});
         this.path = sandboxCoreJarFilePath;
         this.toString = String.format("SandboxClassLoader[namespace=%s;path=%s;]", namespace, path);

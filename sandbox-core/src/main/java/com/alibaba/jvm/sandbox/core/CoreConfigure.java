@@ -38,18 +38,17 @@ public class CoreConfigure {
 
     private static final String KEY_UNSAFE_ENABLE = "unsafe.enable";
 
-    // 受保护key数组，在保护key范围之内，以用户传递的配置为准，系统配置不允许覆盖
+    /** 受保护key数组，在保护key范围之内，以用户传递的配置为准，系统配置不允许覆盖 */
     private static final String[] PROTECT_KEY_ARRAY = {KEY_NAMESPACE, KEY_SANDBOX_HOME, KEY_LAUNCH_MODE, KEY_SERVER_IP, KEY_SERVER_PORT, KEY_SERVER_CHARSET};
 
-    // 用户配置和系统默认配置都可以，需要进行合并的key，例如user_module
+    /** 用户配置和系统默认配置都可以，需要进行合并的key，例如user_module */
     private static final String[] MULTI_KEY_ARRAY = {KEY_USER_MODULE_LIB_PATH};
 
     private static final FeatureCodec codec = new FeatureCodec(';', '=');
 
     private final Map<String, String> featureMap = new LinkedHashMap<String, String>();
 
-    private CoreConfigure(final String featureString,
-                          final String propertiesFilePath) {
+    private CoreConfigure(final String featureString, final String propertiesFilePath) {
         final Map<String, String> featureMap = toFeatureMap(featureString);
         final Map<String, String> propertiesMap = toPropertiesMap(propertiesFilePath);
         this.featureMap.putAll(merge(featureMap, propertiesMap));
@@ -158,7 +157,6 @@ public class CoreConfigure {
     public String getSystemModuleLibPath() {
         return featureMap.get(KEY_SYSTEM_MODULE_LIB_PATH);
     }
-
 
     /**
      * 获取用户模块加载路径

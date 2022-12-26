@@ -39,8 +39,7 @@ public class EventListenerHandler implements SpyHandler {
     private final AtomicInteger invokeIdSequencer = new AtomicInteger(1000);
 
     // 全局处理器ID:处理器映射集合
-    private final Map<Integer/*LISTENER_ID*/, EventProcessor> mappingOfEventProcessor
-            = new ConcurrentHashMap<Integer, EventProcessor>();
+    private final Map<Integer/*LISTENER_ID*/, EventProcessor> mappingOfEventProcessor = new ConcurrentHashMap<Integer, EventProcessor>();
 
     /**
      * 注册事件处理器

@@ -61,6 +61,55 @@ public class JettyCoreServer implements CoreServer {
     }
 
     @Override
+    public synchronized void bind(final CoreConfigure cfg, final Instrumentation inst) throws IOException {
+        this.cfg = cfg;
+        try {
+            initializer.initProcess(new Initializer.Processor() {
+                @Override
+                public void process() throws Throwable {
+                    // 1、加载logback配置
+                    LogbackUtils.init(
+                            cfg.getNamespace(),
+                            cfg.getCfgLibPath() + File.separator + "sandbox-logback.xml"
+                    );
+                    logger.info("initializing server. cfg={}", cfg);
+
+                    // 2、创建沙箱
+                    jvmSandbox = new JvmSandbox(cfg, inst);
+
+                    // 3、初始化http server
+                    initHttpServer();
+                    initJettyContextHandler();
+                    httpServer.start();
+                }
+            });
+
+            // 4、初始化加载所有的模块
+            try {
+                jvmSandbox.getCoreModuleManager().reset();
+            } catch (Throwable cause) {
+                logger.warn("reset occur error when initializing.", cause);
+            }
+
+            final InetSocketAddress local = getLocal();
+            logger.info("initialized server. actual bind to {}:{}",
+                    local.getHostName(),
+                    local.getPort()
+            );
+
+        } catch (Throwable cause) {
+
+            // 这里会抛出到目标应用层，所以在这里留下错误信息
+            logger.warn("initialize server failed.", cause);
+
+            // 对外抛出到目标应用中
+            throw new IOException("server bind failed.", cause);
+        }
+
+        logger.info("{} bind success.", this);
+    }
+
+    @Override
     public void unbind() throws IOException {
         try {
 
@@ -173,49 +222,7 @@ public class JettyCoreServer implements CoreServer {
         httpServer.setThreadPool(qtp);
     }
 
-    @Override
-    public synchronized void bind(final CoreConfigure cfg, final Instrumentation inst) throws IOException {
-        this.cfg = cfg;
-        try {
-            initializer.initProcess(new Initializer.Processor() {
-                @Override
-                public void process() throws Throwable {
-                    LogbackUtils.init(
-                            cfg.getNamespace(),
-                            cfg.getCfgLibPath() + File.separator + "sandbox-logback.xml"
-                    );
-                    logger.info("initializing server. cfg={}", cfg);
-                    jvmSandbox = new JvmSandbox(cfg, inst);
-                    initHttpServer();
-                    initJettyContextHandler();
-                    httpServer.start();
-                }
-            });
 
-            // 初始化加载所有的模块
-            try {
-                jvmSandbox.getCoreModuleManager().reset();
-            } catch (Throwable cause) {
-                logger.warn("reset occur error when initializing.", cause);
-            }
-
-            final InetSocketAddress local = getLocal();
-            logger.info("initialized server. actual bind to {}:{}",
-                    local.getHostName(),
-                    local.getPort()
-            );
-
-        } catch (Throwable cause) {
-
-            // 这里会抛出到目标应用层，所以在这里留下错误信息
-            logger.warn("initialize server failed.", cause);
-
-            // 对外抛出到目标应用中
-            throw new IOException("server bind failed.", cause);
-        }
-
-        logger.info("{} bind success.", this);
-    }
 
     @Override
     public void destroy() {

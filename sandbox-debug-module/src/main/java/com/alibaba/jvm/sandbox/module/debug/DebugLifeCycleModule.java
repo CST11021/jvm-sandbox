@@ -44,31 +44,6 @@ public class DebugLifeCycleModule implements Module, ModuleLifecycle{
     @Resource
     private ModuleManager moduleManager;
 
-    @Override
-    public void onLoad() throws Throwable {
-        lifeCLogger.info("sandbox-module-debug-lifecycle onLoaded.");
-    }
-
-    @Override
-    public void onUnload() throws Throwable {//卸载模块后，删除增强的内容
-        lifeCLogger.info("sandbox-module-debug-lifecycle onUnload.");
-    }
-
-    @Override
-    public void onActive() throws Throwable {
-        lifeCLogger.info("sandbox-module-debug-lifecycle onActive.");
-    }
-
-    @Override
-    public void onFrozen() throws Throwable {
-        lifeCLogger.info("sandbox-module-debug-lifecycle onFrozen.");
-    }
-
-    @Override
-    public void loadCompleted() {
-        lifeCLogger.info("sandbox-module-debug-lifecycle loadCompleted.");
-    }
-
     @Command("control")
     public void control(final Map<String, String> param, final PrintWriter writer){
         final Printer printer = new ConcurrentLinkedQueuePrinter(writer);
@@ -170,4 +145,30 @@ public class DebugLifeCycleModule implements Module, ModuleLifecycle{
             lifeCLogger.error("sandbox lifecycle is fail, " + e.getCause());
         }
     }
+
+    @Override
+    public void onLoad() throws Throwable {
+        lifeCLogger.info("sandbox-module-debug-lifecycle onLoaded.");
+    }
+
+    @Override
+    public void onUnload() throws Throwable {//卸载模块后，删除增强的内容
+        lifeCLogger.info("sandbox-module-debug-lifecycle onUnload.");
+    }
+
+    @Override
+    public void onActive() throws Throwable {
+        lifeCLogger.info("sandbox-module-debug-lifecycle onActive.");
+    }
+
+    @Override
+    public void onFrozen() throws Throwable {
+        lifeCLogger.info("sandbox-module-debug-lifecycle onFrozen.");
+    }
+
+    @Override
+    public void loadCompleted() {
+        lifeCLogger.info("sandbox-module-debug-lifecycle loadCompleted.");
+    }
+
 }
