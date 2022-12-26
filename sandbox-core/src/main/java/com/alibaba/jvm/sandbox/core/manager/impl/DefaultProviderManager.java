@@ -50,6 +50,7 @@ public class DefaultProviderManager implements ProviderManager {
             return;
         }
 
+        // 加载${Sandbox_Home}/bin/provider/下的jar包
         for (final File providerJarFile : FileUtils.listFiles(providerLibDir, new String[]{"jar"}, false)) {
 
             try {

@@ -20,6 +20,12 @@ public class SandboxProtector {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+
+    /**
+     * Sandbox守护者单例
+     */
+    public static final SandboxProtector instance = new SandboxProtector();
+
     private final ThreadLocal<AtomicInteger> isInProtectingThreadLocal = new ThreadLocal<AtomicInteger>() {
         @Override
         protected AtomicInteger initialValue() {
@@ -104,11 +110,5 @@ public class SandboxProtector {
 
         });
     }
-
-
-    /**
-     * Sandbox守护者单例
-     */
-    public static final SandboxProtector instance = new SandboxProtector();
 
 }

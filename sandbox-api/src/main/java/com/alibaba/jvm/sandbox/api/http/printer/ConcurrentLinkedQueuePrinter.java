@@ -18,10 +18,13 @@ import static java.lang.Math.min;
 public class ConcurrentLinkedQueuePrinter implements Printer {
 
     private static final String NUL_STRING = new String(new byte[]{0x00});
+    /** 打印实现 */
     private final PrintWriter writer;
+    /** 打印的任务队列 */
     private final ConcurrentLinkedQueue<String> writeQueue;
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
+    /** 队列的容量大小 */
     private final int capacity;
 
     // 是否被打断
@@ -68,12 +71,9 @@ public class ConcurrentLinkedQueuePrinter implements Printer {
         this(writer, 20, 200, Integer.MAX_VALUE);
     }
 
-    private boolean isOverCapacity() {
-        return writeQueue.size() >= capacity;
-    }
-
     @Override
     public Printer print(String string) {
+        // 将打印的内容放到队列
         if (!isOverCapacity()) {
             writeQueue.offer(string);
         }
@@ -88,18 +88,6 @@ public class ConcurrentLinkedQueuePrinter implements Printer {
         return this;
     }
 
-
-    private void commit() {
-        while (!writeQueue.isEmpty()) {
-            final String string = writeQueue.poll();
-            if (null == string) {
-                writer.print(NUL_STRING);
-            } else {
-                writer.print(string);
-            }
-        }
-    }
-
     @Override
     public Printer flush() {
         commit();
@@ -107,43 +95,22 @@ public class ConcurrentLinkedQueuePrinter implements Printer {
         return this;
     }
 
-    private long computeDelayTimeMs() {
-        if (delayTimeMs >= delayMaxTimeMs) {
-            return delayTimeMs;
-        } else {
-            final long newDelayTime = delayTimeMs + delayStepTimeMs;
-            delayTimeMs = min(newDelayTime, delayMaxTimeMs);
-            return delayTimeMs;
-        }
-    }
-
-    private void resetDelayTimeMs() {
-        delayTimeMs = delayStepTimeMs;
-    }
-
-    private void delay() throws InterruptedException {
-        // 如果最大延时时间不为正数，说明不要延时
-        if (delayMaxTimeMs <= 0) {
-            return;
-        }
-        lock.lock();
-        try {
-            condition.await(computeDelayTimeMs(), TimeUnit.MILLISECONDS);
-        } finally {
-            lock.unlock();
-        }
-    }
-
-
     @Override
     public Printer waitingForBroken() {
         waitingForBroken(0L, TimeUnit.MILLISECONDS);
         return this;
     }
 
+    /**
+     * 挂起当前线程，等待被打断或超时
+     * {@link #waitingForBroken()}
+     *
+     * @param time 超时时间
+     * @param unit 超时时间单位
+     * @return FALSE:在超时时间到达之前返回;TRUE:因超时而返回;
+     */
     @Override
-    public boolean waitingForBroken(final long time,
-                                    final TimeUnit unit) {
+    public boolean waitingForBroken(final long time, final TimeUnit unit) {
 
         // 超时等待时间
         final long timeMs = unit.toMillis(time);
@@ -152,17 +119,14 @@ public class ConcurrentLinkedQueuePrinter implements Printer {
         final boolean isTimeoutControl = timeMs > 0;
 
         // 方法执行开始时间(超时等待计时开始)
-        final long startMs = isTimeoutControl
-                ? System.currentTimeMillis()
-                : 0;
+        final long startMs = isTimeoutControl ? System.currentTimeMillis() : 0;
 
         try {
             while (!writer.checkError()
                     && !isBrokenRef.get()
                     && !Thread.currentThread().isInterrupted()) {
 
-                if (isTimeoutControl
-                        && System.currentTimeMillis() - startMs >= timeMs) {
+                if (isTimeoutControl && System.currentTimeMillis() - startMs >= timeMs) {
                     return true;
                 }
 
@@ -207,4 +171,53 @@ public class ConcurrentLinkedQueuePrinter implements Printer {
         }
     }
 
+    /**
+     * 从队列里获取一个打印内容并执行打印
+     */
+    private void commit() {
+        while (!writeQueue.isEmpty()) {
+            final String string = writeQueue.poll();
+            if (null == string) {
+                writer.print(NUL_STRING);
+            } else {
+                writer.print(string);
+            }
+        }
+    }
+
+    /**
+     * 判断队列是否超出当前容量大小
+     *
+     * @return
+     */
+    private boolean isOverCapacity() {
+        return writeQueue.size() >= capacity;
+    }
+
+    private long computeDelayTimeMs() {
+        if (delayTimeMs >= delayMaxTimeMs) {
+            return delayTimeMs;
+        } else {
+            final long newDelayTime = delayTimeMs + delayStepTimeMs;
+            delayTimeMs = min(newDelayTime, delayMaxTimeMs);
+            return delayTimeMs;
+        }
+    }
+
+    private void resetDelayTimeMs() {
+        delayTimeMs = delayStepTimeMs;
+    }
+
+    private void delay() throws InterruptedException {
+        // 如果最大延时时间不为正数，说明不要延时
+        if (delayMaxTimeMs <= 0) {
+            return;
+        }
+        lock.lock();
+        try {
+            condition.await(computeDelayTimeMs(), TimeUnit.MILLISECONDS);
+        } finally {
+            lock.unlock();
+        }
+    }
 }

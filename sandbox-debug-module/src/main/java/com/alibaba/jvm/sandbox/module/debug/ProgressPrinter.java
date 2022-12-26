@@ -41,6 +41,11 @@ public class ProgressPrinter implements ModuleEventWatcher.Progress {
         progress(index);
     }
 
+    @Override
+    public void finish(int cCnt, int mCnt) {
+        printer.println(String.format("FINISH(cCnt=%d,mCnt=%d)", cCnt, mCnt));
+    }
+
     private void progress(int index) {
         if (printer.isBroken()) {
             return;
@@ -54,9 +59,6 @@ public class ProgressPrinter implements ModuleEventWatcher.Progress {
         return (int) (index * width * 1f / total);
     }
 
-    @Override
-    public void finish(int cCnt, int mCnt) {
-        printer.println(String.format("FINISH(cCnt=%d,mCnt=%d)", cCnt, mCnt));
-    }
+
 
 }

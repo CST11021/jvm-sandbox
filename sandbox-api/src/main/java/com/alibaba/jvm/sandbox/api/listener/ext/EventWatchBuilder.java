@@ -331,8 +331,7 @@ public class EventWatchBuilder {
      * @param patternType        模版匹配模式
      * @since {@code sandbox-api:1.1.2}
      */
-    public EventWatchBuilder(final ModuleEventWatcher moduleEventWatcher,
-                             final PatternType patternType) {
+    public EventWatchBuilder(final ModuleEventWatcher moduleEventWatcher, final PatternType patternType) {
         this.moduleEventWatcher = moduleEventWatcher;
         this.patternType = patternType;
     }
@@ -552,8 +551,7 @@ public class EventWatchBuilder {
         private final PatternGroupList hasExceptionTypes = new PatternGroupList();
         private final PatternGroupList hasAnnotationTypes = new PatternGroupList();
 
-        BuildingForBehavior(final BuildingForClass bfClass,
-                            final String pattern) {
+        BuildingForBehavior(final BuildingForClass bfClass, final String pattern) {
             this.bfClass = bfClass;
             this.pattern = pattern;
         }

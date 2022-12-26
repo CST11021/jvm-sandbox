@@ -49,7 +49,7 @@ public class DebugRalphModule extends ParamSupported implements Module {
     @Resource
     private ModuleEventWatcher moduleEventWatcher;
 
-    /*
+    /**
      * 并发控制
      * -d 'debug-ralph/c-limit?class=<CLASS>&method=<METHOD>&c=<CONCURRENT>'
      */
@@ -136,7 +136,6 @@ public class DebugRalphModule extends ParamSupported implements Module {
 
     }
 
-
     /*
      * 速率控制
      * -d 'debug-ralph/r-limit?class=<CLASS>&method=<METHOD>&c=<RATE>'
@@ -208,55 +207,6 @@ public class DebugRalphModule extends ParamSupported implements Module {
             printer.waitingForBroken();
         } finally {
             watcher.onUnWatched();
-        }
-
-    }
-
-
-    /**
-     * 异常工厂
-     */
-    interface ExceptionFactory {
-        Exception newInstance(String message);
-    }
-
-    /**
-     * 异常类型
-     */
-    enum ExceptionType {
-        IOException(new ExceptionFactory() {
-            @Override
-            public Exception newInstance(String message) {
-                return new IOException(message);
-            }
-        }),
-        NullPointException(new ExceptionFactory() {
-            @Override
-            public Exception newInstance(String message) {
-                return new NullPointerException(message);
-            }
-        }),
-        RuntimeException(new ExceptionFactory() {
-            @Override
-            public Exception newInstance(String message) {
-                return new RuntimeException(message);
-            }
-        }),
-        TimeoutException(new ExceptionFactory() {
-            @Override
-            public Exception newInstance(String message) {
-                return new TimeoutException(message);
-            }
-        });
-
-        private final ExceptionFactory factory;
-
-        ExceptionType(final ExceptionFactory factory) {
-            this.factory = factory;
-        }
-
-        public Exception throwIt(final String message) throws Exception {
-            return factory.newInstance(message);
         }
 
     }
@@ -404,6 +354,54 @@ public class DebugRalphModule extends ParamSupported implements Module {
 
             watcher.onUnWatched();
         }
+    }
+
+    /**
+     * 异常工厂
+     */
+    interface ExceptionFactory {
+        Exception newInstance(String message);
+    }
+
+    /**
+     * 异常类型
+     */
+    enum ExceptionType {
+        IOException(new ExceptionFactory() {
+            @Override
+            public Exception newInstance(String message) {
+                return new IOException(message);
+            }
+        }),
+        NullPointException(new ExceptionFactory() {
+            @Override
+            public Exception newInstance(String message) {
+                return new NullPointerException(message);
+            }
+        }),
+        RuntimeException(new ExceptionFactory() {
+            @Override
+            public Exception newInstance(String message) {
+                return new RuntimeException(message);
+            }
+        }),
+        TimeoutException(new ExceptionFactory() {
+            @Override
+            public Exception newInstance(String message) {
+                return new TimeoutException(message);
+            }
+        });
+
+        private final ExceptionFactory factory;
+
+        ExceptionType(final ExceptionFactory factory) {
+            this.factory = factory;
+        }
+
+        public Exception throwIt(final String message) throws Exception {
+            return factory.newInstance(message);
+        }
+
     }
 
 }

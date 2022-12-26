@@ -28,7 +28,6 @@ public class DebugTraceModule extends ParamSupported implements Module {
     @Resource
     private ModuleEventWatcher moduleEventWatcher;
 
-
     @Command("trace")
     public void trace(final Map<String, String> param, final PrintWriter writer) {
 

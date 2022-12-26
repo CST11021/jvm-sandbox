@@ -36,9 +36,7 @@ public class DebugWatchModule extends ParamSupported implements Module {
     private ModuleEventWatcher moduleEventWatcher;
 
     @Command("watch")
-    public void watch(final Map<String, String> param,
-                      final Map<String, String[]> params,
-                      final PrintWriter writer) {
+    public void watch(final Map<String, String> param, final Map<String, String[]> params, final PrintWriter writer) {
 
         final String cnPattern = getParameter(param, "class");
         final String mnPattern = getParameter(param, "method");
@@ -129,11 +127,8 @@ public class DebugWatchModule extends ParamSupported implements Module {
 
     }
 
-
     private static String toString(final Object object) {
-        return null == object
-                ? "null"
-                : object.toString();
+        return null == object ? "null" : object.toString();
     }
 
     /**

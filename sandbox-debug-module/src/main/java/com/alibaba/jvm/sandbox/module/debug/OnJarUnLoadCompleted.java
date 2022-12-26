@@ -13,7 +13,9 @@ public class OnJarUnLoadCompleted implements ModuleJarUnLoadSpi {
         closeLogback();
     }
 
-    // 关闭Logback日志框架
+    /**
+     * 关闭Logback日志框架
+     */
     private void closeLogback() {
         try {
             ((LoggerContext) LoggerFactory.getILoggerFactory()).stop();

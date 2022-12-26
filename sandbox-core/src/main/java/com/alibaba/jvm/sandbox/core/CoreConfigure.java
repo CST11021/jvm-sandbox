@@ -20,6 +20,20 @@ import java.util.*;
  */
 public class CoreConfigure {
 
+    /*
+                    NAMESPACE : default
+                      VERSION : 1.3.3
+                         MODE : ATTACH
+                  SERVER_ADDR : 0.0.0.0
+                  SERVER_PORT : 12580
+               UNSAFE_SUPPORT : ENABLE
+                 SANDBOX_HOME : /Users/wanghongzhan/sandbox/bin/..
+            SYSTEM_MODULE_LIB : /Users/wanghongzhan/sandbox/bin/../module
+              USER_MODULE_LIB : /Users/wanghongzhan/sandbox/sandbox-module;~/.sandbox-module;
+          SYSTEM_PROVIDER_LIB : /Users/wanghongzhan/sandbox/bin/../provider
+           EVENT_POOL_SUPPORT : DISABLE
+    */
+
     private static final String KEY_NAMESPACE = "namespace";
     private static final String DEFAULT_VAL_NAMESPACE = "default";
 
