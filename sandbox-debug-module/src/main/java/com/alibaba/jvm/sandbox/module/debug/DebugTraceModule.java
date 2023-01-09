@@ -28,6 +28,22 @@ public class DebugTraceModule extends ParamSupported implements Module {
     @Resource
     private ModuleEventWatcher moduleEventWatcher;
 
+    /**
+     * 示例：追踪GreetingController方法的调用耗时
+     *
+     * > sh ~/sandbox/bin/sandbox.sh -p 2575 -d 'debug-trace/trace?class=hello.GreetingController&method=*'
+     * [##################################################]FINISH(cCnt=1,mCnt=2)
+     * tracing on [hello.GreetingController#*].
+     * Press CTRL_C abort it!
+     * `---+Tracing for : hello.GreetingController.greeting by http-nio-8080-exec-5
+     *     `---+[1,1ms]Enter : hello.GreetingController.greeting(...);
+     *         +---[0,0ms]java.util.concurrent.atomic.AtomicLong:incrementAndGet(@16)
+     *         +---[1,1ms]java.lang.String:format(@17)
+     *         `---[1,0ms]hello.Greeting:<init>(@17)
+     *
+     * @param param
+     * @param writer
+     */
     @Command("trace")
     public void trace(final Map<String, String> param, final PrintWriter writer) {
 

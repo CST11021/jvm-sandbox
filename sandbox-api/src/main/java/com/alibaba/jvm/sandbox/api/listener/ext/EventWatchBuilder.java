@@ -344,9 +344,7 @@ public class EventWatchBuilder {
      * @param patternType 匹配模式
      * @return TRUE:匹配成功 / FALSE:匹配失败
      */
-    private static boolean patternMatching(final String string,
-                                           final String pattern,
-                                           final PatternType patternType) {
+    private static boolean patternMatching(final String string, final String pattern, final PatternType patternType) {
         switch (patternType) {
             case WILDCARD:
                 return GaStringUtils.matching(string, pattern);
@@ -763,8 +761,7 @@ public class EventWatchBuilder {
         };
     }
 
-    private Filter makeExtFilter(final Filter filter,
-                                 final BuildingForClass bfClass) {
+    private Filter makeExtFilter(final Filter filter, final BuildingForClass bfClass) {
         return ExtFilter.ExtFilterFactory.make(
                 filter,
                 bfClass.isIncludeSubClasses,
@@ -779,9 +776,7 @@ public class EventWatchBuilder {
         return new ProgressGroup(progresses);
     }
 
-    private EventWatcher build(final EventListener listener,
-                               final Progress progress,
-                               final Event.Type... eventTypes) {
+    private EventWatcher build(final EventListener listener, final Progress progress, final Event.Type... eventTypes) {
 
         final int watchId = moduleEventWatcher.watch(
                 toEventWatchCondition(),

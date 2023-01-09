@@ -23,12 +23,10 @@ class EventProcessor {
     class Process {
 
         // 事件工厂
-        private final SingleEventFactory eventFactory
-                = new SingleEventFactory();
+        private final SingleEventFactory eventFactory = new SingleEventFactory();
 
         // 调用堆栈
-        private final GaStack<Integer> stack
-                = new ThreadUnsafeGaStack<Integer>();
+        private final GaStack<Integer> stack = new ThreadUnsafeGaStack<Integer>();
 
         // 是否需要忽略整个调用过程
         private boolean isIgnoreProcess = false;
@@ -180,9 +178,7 @@ class EventProcessor {
         }
     };
 
-    EventProcessor(final int listenerId,
-                   final EventListener listener,
-                   final Event.Type[] eventTypes) {
+    EventProcessor(final int listenerId, final EventListener listener, final Event.Type[] eventTypes) {
 
         this.listenerId = listenerId;
         this.eventTypes = eventTypes;
@@ -190,7 +186,6 @@ class EventProcessor {
                 ? new InterruptedEventListenerImpl(listener)
                 : listener;
     }
-
 
     /**
      * 校验器，用于校验事件处理器状态是否正确

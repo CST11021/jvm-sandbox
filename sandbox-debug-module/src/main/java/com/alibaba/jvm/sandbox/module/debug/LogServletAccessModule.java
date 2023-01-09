@@ -34,6 +34,7 @@ import static org.apache.commons.lang3.ArrayUtils.contains;
 @Information(id = "debug-servlet-access", version = "0.0.2", author = "luanjia@taobao.com")
 public class LogServletAccessModule implements Module, LoadCompleted {
 
+    /** <FileNamePattern>${user.home}/logs/sandbox/debug/servlet-access.log.%d{yyyy-MM-dd}</FileNamePattern> */
     private final Logger logger = LoggerFactory.getLogger("DEBUG-SERVLET-ACCESS");
 
     @Resource
@@ -98,7 +99,6 @@ public class LogServletAccessModule implements Module, LoadCompleted {
 
                     @Override
                     protected void before(Advice advice) throws Throwable {
-
 
                         // 只关心顶层调用
                         if (!advice.isProcessTop()) {
@@ -206,7 +206,6 @@ public class LogServletAccessModule implements Module, LoadCompleted {
         }
         return StringUtils.join(kvPairs, "&");
     }
-
 
     /*
      * 记录access日志

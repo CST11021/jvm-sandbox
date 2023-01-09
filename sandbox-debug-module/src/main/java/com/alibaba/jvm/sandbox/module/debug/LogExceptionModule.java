@@ -26,6 +26,7 @@ import static com.alibaba.jvm.sandbox.api.util.GaStringUtils.getJavaClassName;
 @Information(id = "debug-exception-logger", version = "0.0.2", author = "luanjia@taobao.com")
 public class LogExceptionModule implements Module, LoadCompleted {
 
+    /** <FileNamePattern>${user.home}/logs/sandbox/debug/exception-monitor.log.%d{yyyy-MM-dd}</FileNamePattern> */
     private final Logger exLogger = LoggerFactory.getLogger("DEBUG-EXCEPTION-LOGGER");
 
     @Resource

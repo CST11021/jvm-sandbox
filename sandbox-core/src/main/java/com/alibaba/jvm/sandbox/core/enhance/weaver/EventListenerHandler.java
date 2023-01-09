@@ -34,12 +34,11 @@ public class EventListenerHandler implements SpyHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    // 调用序列生成器
-    // private final Sequencer invokeIdSequencer = new Sequencer();
+    /** 调用序列生成器 */
     private final AtomicInteger invokeIdSequencer = new AtomicInteger(1000);
 
-    // 全局处理器ID:处理器映射集合
-    private final Map<Integer/*LISTENER_ID*/, EventProcessor> mappingOfEventProcessor = new ConcurrentHashMap<Integer, EventProcessor>();
+    /** 全局处理器ID:处理器映射集合Map<LISTENER_ID, EventProcessor> */
+    private final Map<Integer, EventProcessor> mappingOfEventProcessor = new ConcurrentHashMap<Integer, EventProcessor>();
 
     /**
      * 注册事件处理器

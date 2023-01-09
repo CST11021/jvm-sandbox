@@ -25,17 +25,14 @@ public class Spy {
      */
     public static volatile boolean isSpyThrowException = false;
 
+    private static final SelfCallBarrier selfCallBarrier = new SelfCallBarrier();
+
+    // 全局序列
+    private static final AtomicInteger sequenceRef = new AtomicInteger(1000);
+
+    /** Map<namespace, SpyHandler> */
     private static final ConcurrentHashMap<String, SpyHandler> namespaceSpyHandlerMap = new ConcurrentHashMap<String, SpyHandler>();
 
-    /**
-     * 判断间谍类是否已经完成初始化
-     *
-     * @param namespace 命名空间
-     * @return TRUE:已完成初始化;FALSE:未完成初始化;
-     */
-    public static boolean isInit(final String namespace) {
-        return namespaceSpyHandlerMap.containsKey(namespace);
-    }
 
     /**
      * 初始化间谍
@@ -46,6 +43,16 @@ public class Spy {
      */
     public static void init(final String namespace, final SpyHandler spyHandler) {
         namespaceSpyHandlerMap.putIfAbsent(namespace, spyHandler);
+    }
+
+    /**
+     * 判断间谍类是否已经完成初始化
+     *
+     * @param namespace 命名空间
+     * @return TRUE:已完成初始化;FALSE:未完成初始化;
+     */
+    public static boolean isInit(final String namespace) {
+        return namespaceSpyHandlerMap.containsKey(namespace);
     }
 
     /**
@@ -61,10 +68,6 @@ public class Spy {
         }
     }
 
-
-    // 全局序列
-    private static final AtomicInteger sequenceRef = new AtomicInteger(1000);
-
     /**
      * 生成全局唯一序列，
      * 在JVM-SANDBOX中允许多个命名空间的存在，不同的命名空间下listenerId/objectId将会被植入到同一份字节码中，
@@ -77,16 +80,20 @@ public class Spy {
     }
 
 
-    private static void handleException(Throwable cause) throws Throwable {
-        if (isSpyThrowException) {
-            throw cause;
-        } else {
-            cause.printStackTrace();
-        }
-    }
 
-    private static final SelfCallBarrier selfCallBarrier = new SelfCallBarrier();
 
+    // 方法调用事件函数
+
+    /**
+     *
+     * @param lineNumber
+     * @param owner
+     * @param name
+     * @param desc
+     * @param namespace
+     * @param listenerId
+     * @throws Throwable
+     */
     public static void spyMethodOnCallBefore(final int lineNumber,
                                              final String owner,
                                              final String name,
@@ -215,6 +222,14 @@ public class Spy {
             return Ret.RET_NONE;
         } finally {
             selfCallBarrier.exit(thread, node);
+        }
+    }
+
+    private static void handleException(Throwable cause) throws Throwable {
+        if (isSpyThrowException) {
+            throw cause;
+        } else {
+            cause.printStackTrace();
         }
     }
 

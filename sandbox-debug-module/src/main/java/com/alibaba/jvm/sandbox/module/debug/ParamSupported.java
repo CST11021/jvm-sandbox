@@ -107,9 +107,14 @@ public class ParamSupported {
         return values;
     }
 
-
-    protected static String getParameter(final Map<String, String> param,
-                                         final String name) {
+    /**
+     * 根据参数名获取参数
+     *
+     * @param param
+     * @param name
+     * @return
+     */
+    protected static String getParameter(final Map<String, String> param, final String name) {
         return getParameter(
                 param,
                 name,

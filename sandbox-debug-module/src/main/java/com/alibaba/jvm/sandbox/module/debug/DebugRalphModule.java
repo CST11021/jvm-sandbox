@@ -50,8 +50,13 @@ public class DebugRalphModule extends ParamSupported implements Module {
     private ModuleEventWatcher moduleEventWatcher;
 
     /**
-     * 并发控制
-     * -d 'debug-ralph/c-limit?class=<CLASS>&method=<METHOD>&c=<CONCURRENT>'
+     * 并发控制，控制指定的类及方法的并发调用限制
+     * 命令：sh ${sandbox_home}/bin/sandbox.sh -d 'debug-ralph/c-limit?class=<CLASS>&method=<METHOD>&c=<CONCURRENT>'
+     * 例如：限制 hello.GreetingController#greeting 方法的并发调用限制为1
+     * sh ~/sandbox/bin/sandbox.sh -p 2575 -d 'debug-ralph/c-limit?class=hello.GreetingController&method=greeting&c=1'
+     *
+     * @param param
+     * @param writer
      */
     @Command("c-limit")
     public void concurrentLimit(final Map<String, String> param, final PrintWriter writer) {
@@ -73,8 +78,7 @@ public class DebugRalphModule extends ParamSupported implements Module {
                 .withProgress(new ProgressPrinter(printer))
                 .onWatch(new EventListener() {
 
-                    // 设定一个本次拦截共享的并发限制器，所有被匹配上的类的入口
-                    // 将会共同被同一个并发限制！
+                    // 设定一个本次拦截共享的并发限制器，所有被匹配上的类的入口将会共同被同一个并发限制！
                     final Semaphore sph = new Semaphore(concurrent);
 
                     // 是否一次拦截调用链的入口
@@ -94,8 +98,7 @@ public class DebugRalphModule extends ParamSupported implements Module {
                         switch (event.type) {
                             case BEFORE: {
                                 final BeforeEvent bEvent = (BeforeEvent) event;
-                                // 如果是顶层的调用，必须通过流控获取继续调用的门票
-                                // 没有拿到门票的就让他快速失败掉
+                                // 如果是顶层的调用，必须通过流控获取继续调用的门票，没有拿到门票的就让他快速失败掉
                                 if (!sph.tryAcquire()) {
                                     printer.println(String.format(
                                             "%s.%s will be limit by concurrent: %s on %s",
@@ -116,7 +119,7 @@ public class DebugRalphModule extends ParamSupported implements Module {
 
                         }
 
-                    }//onEvent
+                    }
 
                 }, BEFORE, RETURN, THROWS);
 
@@ -136,9 +139,12 @@ public class DebugRalphModule extends ParamSupported implements Module {
 
     }
 
-    /*
-     * 速率控制
+    /**
+     * 速率控制：
      * -d 'debug-ralph/r-limit?class=<CLASS>&method=<METHOD>&c=<RATE>'
+     *
+     * @param param
+     * @param writer
      */
     @Command("r-limit")
     public void rateLimit(final Map<String, String> param, final PrintWriter writer) {
@@ -211,9 +217,12 @@ public class DebugRalphModule extends ParamSupported implements Module {
 
     }
 
-    /*
-     * 注入异常
+    /**
+     * 注入异常：
      * -d 'debug-ralph/wreck?class=<CLASS>&method=<METHOD>&type=<EXCEPTION-TYPE>'
+     *
+     * @param param
+     * @param writer
      */
     @Command("wreck")
     public void exception(final Map<String, String> param, final PrintWriter writer) {
@@ -278,9 +287,12 @@ public class DebugRalphModule extends ParamSupported implements Module {
 
     }
 
-    /*
-     * 注入延时
+    /**
+     * 注入延时：
      * -d 'debug-ralph/delay?class=<CLASS>&method=<METHOD>&delay=<DELAY(ms)>'
+     *
+     * @param param
+     * @param writer
      */
     @Command("delay")
     public void delay(final Map<String, String> param, final PrintWriter writer) {

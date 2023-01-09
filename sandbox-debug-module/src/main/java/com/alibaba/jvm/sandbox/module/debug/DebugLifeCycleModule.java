@@ -44,6 +44,13 @@ public class DebugLifeCycleModule implements Module, ModuleLifecycle {
     @Resource
     private ModuleManager moduleManager;
 
+    /**
+     * 命令：sh ${sandbox_home}/bin/sandbox.sh -p ${PID} -d 'debug-lifecycle/control?class=testClass&method=testMethod'
+     * 该命名仅仅只是测试模块的声明周期
+     *
+     * @param param
+     * @param writer
+     */
     @Command("control")
     public void control(final Map<String, String> param, final PrintWriter writer) {
         final Printer printer = new ConcurrentLinkedQueuePrinter(writer);

@@ -19,30 +19,28 @@ public class CoreModule {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    // 全局唯一编号
+    /** 模块的全局唯一编号 */
     private final String uniqueId;
 
-    // 模块归属Jar文件
+    /** 模块归属Jar文件 */
     private final File jarFile;
 
-    // 模块加载的ClassLoader
+    /** 模块加载的ClassLoader */
     private final ModuleJarClassLoader loader;
 
-    // 模块
+    /** 模块 */
     private final Module module;
 
-    // 模块的类转换器
-    private final Set<SandboxClassFileTransformer> sandboxClassFileTransformers
-            = new LinkedHashSet<SandboxClassFileTransformer>();
+    /** 模块的类转换器 */
+    private final Set<SandboxClassFileTransformer> sandboxClassFileTransformers = new LinkedHashSet<SandboxClassFileTransformer>();
 
-    // 模块所持有的可释放资源
-    private final List<ReleaseResource<?>> releaseResources
-            = new ArrayList<ReleaseResource<?>>();
+    /** 模块所持有的可释放资源 */
+    private final List<ReleaseResource<?>> releaseResources = new ArrayList<ReleaseResource<?>>();
 
-    // 是否已经激活
+    /** 是否已经激活 */
     private boolean isActivated;
 
-    // 是否已被加载
+    /** 是否已被加载 */
     private boolean isLoaded;
 
     /**
@@ -53,10 +51,7 @@ public class CoreModule {
      * @param loader   模块加载ClassLoader
      * @param module   模块
      */
-    public CoreModule(final String uniqueId,
-                      final File jarFile,
-                      final ModuleJarClassLoader loader,
-                      final Module module) {
+    public CoreModule(final String uniqueId, final File jarFile, final ModuleJarClassLoader loader, final Module module) {
         this.uniqueId = uniqueId;
         this.jarFile = jarFile;
         this.loader = loader;

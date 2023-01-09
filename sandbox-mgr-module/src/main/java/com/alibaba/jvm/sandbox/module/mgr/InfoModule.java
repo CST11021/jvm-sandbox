@@ -23,10 +23,9 @@ public class InfoModule implements Module {
     @Resource
     private ConfigInfo configInfo;
 
-//    @Resource
-//    private EventMonitor eventMonitor;
+   // @Resource
+   // private EventMonitor eventMonitor;
 
-    //@Http("/version")
     @Command("version")
     public void version(final PrintWriter writer) throws IOException {
 
@@ -42,24 +41,23 @@ public class InfoModule implements Module {
                 .append("              USER_MODULE_LIB : ").append(configInfo.getUserModuleLibPath()).append("\n")
                 .append("          SYSTEM_PROVIDER_LIB : ").append(configInfo.getSystemProviderLibPath()).append("\n")
                 .append("           EVENT_POOL_SUPPORT : ").append(configInfo.isEnableEventPool() ? "ENABLE" : "DISABLE");
-//                       /*############################# : */
-//        if (configInfo.isEnableEventPool()) {
-//            versionSB
-//                    .append("\n")
-//                           /*############################# : */
-//                    .append("  EVENT_POOL_PER_KEY_IDLE_MIN : ").append(configInfo.getEventPoolMinIdlePerEvent()).append("\n")
-//                    .append("  EVENT_POOL_PER_KEY_IDLE_MAX : ").append(configInfo.getEventPoolMaxIdlePerEvent()).append("\n")
-//                    .append(" EVENT_POOL_PER_KEY_TOTAL_MAX : ").append(configInfo.getEventPoolMaxTotalPerEvent()).append("\n")
-//                    .append("             EVENT_POOL_TOTAL : ").append(configInfo.getEventPoolMaxTotal())
-//            ;
-//        }
+       //                /*############################# : */
+       // if (configInfo.isEnableEventPool()) {
+       //     versionSB
+       //             .append("\n")
+       //                    /*############################# : */
+       //             .append("  EVENT_POOL_PER_KEY_IDLE_MIN : ").append(configInfo.getEventPoolMinIdlePerEvent()).append("\n")
+       //             .append("  EVENT_POOL_PER_KEY_IDLE_MAX : ").append(configInfo.getEventPoolMaxIdlePerEvent()).append("\n")
+       //             .append(" EVENT_POOL_PER_KEY_TOTAL_MAX : ").append(configInfo.getEventPoolMaxTotalPerEvent()).append("\n")
+       //             .append("             EVENT_POOL_TOTAL : ").append(configInfo.getEventPoolMaxTotal())
+       //     ;
+       // }
 
         writer.println(versionSB.toString());
         writer.flush();
 
     }
 
-    //@Http("/event-pool")
     @Command("event-pool")
     public void eventPool(final PrintWriter writer) throws IOException {
 

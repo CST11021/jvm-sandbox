@@ -166,7 +166,15 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
         return watch(toOrGroupMatcher(condition.getOrFilterArray()), listener, progress, eventType);
     }
 
-    // 这里是用matcher重制过后的watch
+    /**
+     * 这里是用matcher重制过后的watch
+     *
+     * @param matcher
+     * @param listener
+     * @param progress
+     * @param eventType
+     * @return
+     */
     private int watch(final Matcher matcher,
                       final EventListener listener,
                       final Progress progress,

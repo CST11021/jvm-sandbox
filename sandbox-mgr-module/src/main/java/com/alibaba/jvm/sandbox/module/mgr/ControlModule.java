@@ -22,19 +22,11 @@ public class ControlModule implements Module {
     @Resource
     private ConfigInfo configInfo;
 
-    // 卸载jvm-sandbox
-    private void uninstall() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        final Class<?> classOfAgentLauncher = getClass().getClassLoader()
-                .loadClass("com.alibaba.jvm.sandbox.agent.AgentLauncher");
-
-        MethodUtils.invokeStaticMethod(
-                classOfAgentLauncher,
-                "uninstall",
-                configInfo.getNamespace()
-        );
-    }
-
-    // @Http("/shutdown")
+    /**
+     * 卸载命名空间下的jvm-sandbox
+     *
+     * @param writer
+     */
     @Command("shutdown")
     public void shutdown(final PrintWriter writer) {
 
@@ -60,6 +52,25 @@ public class ControlModule implements Module {
 
         shutdownJvmSandboxHook.start();
 
+    }
+
+    /**
+     * 卸载jvm-sandbox
+     *
+     * @throws ClassNotFoundException
+     * @throws NoSuchMethodException
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     */
+    private void uninstall() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        final Class<?> classOfAgentLauncher = getClass().getClassLoader()
+                .loadClass("com.alibaba.jvm.sandbox.agent.AgentLauncher");
+
+        MethodUtils.invokeStaticMethod(
+                classOfAgentLauncher,
+                "uninstall",
+                configInfo.getNamespace()
+        );
     }
 
 }
