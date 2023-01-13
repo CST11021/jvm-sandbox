@@ -27,8 +27,7 @@ class ModuleLibLoader {
     // 沙箱加载模式
     private final Information.Mode mode;
 
-    ModuleLibLoader(final File moduleLibDir,
-                    final Information.Mode mode) {
+    ModuleLibLoader(final File moduleLibDir, final Information.Mode mode) {
         this.moduleLibDir = moduleLibDir;
         this.mode = mode;
     }
@@ -48,7 +47,6 @@ class ModuleLibLoader {
         }
     }
 
-
     private File[] listModuleJarFileInLib() {
         final File[] moduleJarFileArray = toModuleJarFileArray();
         Arrays.sort(moduleJarFileArray);
@@ -66,8 +64,7 @@ class ModuleLibLoader {
      * @param mjCb 模块文件加载回调
      * @param mCb  模块加载回掉
      */
-    void load(final ModuleJarLoadCallback mjCb,
-              final ModuleJarLoader.ModuleLoadCallback mCb) {
+    void load(final ModuleJarLoadCallback mjCb, final ModuleJarLoader.ModuleLoadCallback mCb) {
 
         // 开始逐条加载
         for (final File moduleJarFile : listModuleJarFileInLib()) {

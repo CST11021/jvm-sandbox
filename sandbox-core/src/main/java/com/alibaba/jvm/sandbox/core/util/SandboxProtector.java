@@ -86,8 +86,7 @@ public class SandboxProtector {
      * @param <T>                    接口类型
      * @return 被保护的目标接口实现
      */
-    public <T> T protectProxy(final Class<T> protectTargetInterface,
-                              final T protectTarget) {
+    public <T> T protectProxy(final Class<T> protectTargetInterface, final T protectTarget) {
         return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{protectTargetInterface}, new InvocationHandler() {
 
             @Override

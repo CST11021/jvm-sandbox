@@ -25,15 +25,13 @@ class ModuleJarLoader {
     // 沙箱加载模式
     private final Information.Mode mode;
 
-    ModuleJarLoader(final File moduleJarFile,
-                    final Information.Mode mode) {
+    ModuleJarLoader(final File moduleJarFile, final Information.Mode mode) {
         this.moduleJarFile = moduleJarFile;
         this.mode = mode;
     }
 
 
-    private boolean loadingModules(final ModuleJarClassLoader moduleClassLoader,
-                                   final ModuleLoadCallback mCb) {
+    private boolean loadingModules(final ModuleJarClassLoader moduleClassLoader, final ModuleLoadCallback mCb) {
 
         final Set<String> loadedModuleUniqueIds = new LinkedHashSet<String>();
         final ServiceLoader<Module> moduleServiceLoader = ServiceLoader.load(Module.class, moduleClassLoader);

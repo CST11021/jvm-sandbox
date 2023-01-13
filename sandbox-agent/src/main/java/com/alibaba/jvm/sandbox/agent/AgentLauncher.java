@@ -241,7 +241,6 @@ public class AgentLauncher {
         try {
             final String home = getSandboxHome(featureMap);
             // 将sandbox-spy.jar包注入到BootstrapClassLoader
-            // Instrumentation#appendToBootstrapClassLoaderSearch()方法将core.jar包嵌入到目标应用的classloader中
             inst.appendToBootstrapClassLoaderSearch(new JarFile(new File(
                     getSandboxSpyJarPath(home)
             )));
