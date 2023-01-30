@@ -40,6 +40,16 @@ public class EventListenerHandler implements SpyHandler {
     /** 全局处理器ID:处理器映射集合Map<LISTENER_ID, EventProcessor> */
     private final Map<Integer, EventProcessor> mappingOfEventProcessor = new ConcurrentHashMap<Integer, EventProcessor>();
 
+    // ----------------------------------- 单例模式 -----------------------------------
+
+    private static EventListenerHandler singleton = new EventListenerHandler();
+
+    public static EventListenerHandler getSingleton() {
+        return singleton;
+    }
+
+
+
     /**
      * 注册事件处理器
      *
@@ -608,15 +618,6 @@ public class EventListenerHandler implements SpyHandler {
             }
             processor.check();
         }
-    }
-
-
-    // ----------------------------------- 单例模式 -----------------------------------
-
-    private static EventListenerHandler singleton = new EventListenerHandler();
-
-    public static EventListenerHandler getSingleton() {
-        return singleton;
     }
 
 

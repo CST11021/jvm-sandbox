@@ -20,7 +20,6 @@ public class SandboxProtector {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-
     /**
      * Sandbox守护者单例
      */
@@ -32,6 +31,38 @@ public class SandboxProtector {
             return new AtomicInteger(0);
         }
     };
+
+    /**
+     * 守护接口定义的所有方法
+     *
+     * @param protectTargetInterface 保护目标接口类型
+     * @param protectTarget          保护目标接口实现
+     * @param <T>                    接口类型
+     * @return 被保护的目标接口实现
+     */
+    public <T> T protectProxy(final Class<T> protectTargetInterface, final T protectTarget) {
+        return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{protectTargetInterface}, new InvocationHandler() {
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                final int enterReferenceCount = enterProtecting();
+                try {
+                    return method.invoke(protectTarget, args);
+                } finally {
+                    final int exitReferenceCount = exitProtecting();
+                    assert enterReferenceCount == exitReferenceCount;
+                    if (enterReferenceCount != exitReferenceCount) {
+                        logger.warn("thread:{} exit protecting with error!, expect:{} actual:{}",
+                                Thread.currentThread(),
+                                enterReferenceCount,
+                                exitReferenceCount
+                        );
+                    }
+                }
+            }
+
+        });
+    }
 
     /**
      * 进入守护区域
@@ -76,38 +107,6 @@ public class SandboxProtector {
      */
     public boolean isInProtecting() {
         return isInProtectingThreadLocal.get().get() > 0;
-    }
-
-    /**
-     * 守护接口定义的所有方法
-     *
-     * @param protectTargetInterface 保护目标接口类型
-     * @param protectTarget          保护目标接口实现
-     * @param <T>                    接口类型
-     * @return 被保护的目标接口实现
-     */
-    public <T> T protectProxy(final Class<T> protectTargetInterface, final T protectTarget) {
-        return (T) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{protectTargetInterface}, new InvocationHandler() {
-
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                final int enterReferenceCount = enterProtecting();
-                try {
-                    return method.invoke(protectTarget, args);
-                } finally {
-                    final int exitReferenceCount = exitProtecting();
-                    assert enterReferenceCount == exitReferenceCount;
-                    if (enterReferenceCount != exitReferenceCount) {
-                        logger.warn("thread:{} exit protecting with error!, expect:{} actual:{}",
-                                Thread.currentThread(),
-                                enterReferenceCount,
-                                exitReferenceCount
-                        );
-                    }
-                }
-            }
-
-        });
     }
 
 }

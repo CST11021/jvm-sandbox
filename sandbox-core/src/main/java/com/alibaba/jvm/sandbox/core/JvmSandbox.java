@@ -32,15 +32,16 @@ public class JvmSandbox {
 
     public JvmSandbox(final CoreConfigure cfg, final Instrumentation inst) {
         EventListenerHandler.getSingleton();
-        this.cfg = cfg;
-        this.coreModuleManager = SandboxProtector.instance.protectProxy(CoreModuleManager.class,
-                new DefaultCoreModuleManager(
-                        cfg,
-                        inst,
-                        new DefaultCoreLoadedClassDataSource(inst, cfg.isEnableUnsafe()),
-                        new DefaultProviderManager(cfg)
-                )
+
+        DefaultCoreModuleManager manager = new DefaultCoreModuleManager(
+                cfg,
+                inst,
+                new DefaultCoreLoadedClassDataSource(inst, cfg.isEnableUnsafe()),
+                new DefaultProviderManager(cfg)
         );
+
+        this.cfg = cfg;
+        this.coreModuleManager = SandboxProtector.instance.protectProxy(CoreModuleManager.class, manager);
 
         init();
     }

@@ -37,32 +37,14 @@ public class ModuleMgrModule implements Module {
     @Resource
     private ModuleManager moduleManager;
 
-    // 获取参数值
-    private String getParamWithDefault(final Map<String, String> param, final String name, final String defaultValue) {
-        final String valueFromReq = param.get(name);
-        return StringUtils.isBlank(valueFromReq)
-                ? defaultValue
-                : valueFromReq;
-    }
-
-    // 搜索模块
-    private Collection<Module> search(final String idsStringPattern) {
-        final Collection<Module> foundModules = new ArrayList<Module>();
-        for (Module module : moduleManager.list()) {
-            final Information moduleInfo = module.getClass().getAnnotation(Information.class);
-            if (!matching(moduleInfo.id(), idsStringPattern)) {
-                continue;
-            }
-            foundModules.add(module);
-        }
-        return foundModules;
-    }
-
-    // 输出信息到客户端
-    private void output(final PrintWriter writer, final String format, final Object... objectArray) {
-        writer.println(String.format(format, objectArray));
-    }
-
+    /**
+     * 可通过如下2中命令命令方式，调用该方法
+     * 方式一：sh sandbox.sh -p ${PID} -l
+     * 方式二：sh ~/sandbox/bin/sandbox.sh -p 2575 -d 'sandbox-module-mgr/list'
+     *
+     * @param writer
+     * @throws IOException
+     */
     // @Http("/list")
     @Command("list")
     public void list(final PrintWriter writer) throws IOException {
@@ -105,8 +87,7 @@ public class ModuleMgrModule implements Module {
 
     // @Http("/flush")
     @Command("flush")
-    public void flush(final Map<String, String> param,
-                      final PrintWriter writer) throws ModuleException {
+    public void flush(final Map<String, String> param, final PrintWriter writer) throws ModuleException {
         final String isForceString = getParamWithDefault(param, "force", EMPTY);
         final boolean isForce = BooleanUtils.toBoolean(isForceString);
         moduleManager.flush(isForce);
@@ -122,8 +103,7 @@ public class ModuleMgrModule implements Module {
 
     // @Http("/unload")
     @Command("unload")
-    public void unload(final Map<String, String> param,
-                       final PrintWriter writer) {
+    public void unload(final Map<String, String> param, final PrintWriter writer) {
         int total = 0;
         final String idsStringPattern = getParamWithDefault(param, "ids", EMPTY);
         for (final Module module : search(idsStringPattern)) {
@@ -140,8 +120,7 @@ public class ModuleMgrModule implements Module {
 
     // @Http("/active")
     @Command("active")
-    public void active(final Map<String, String> param,
-                       final PrintWriter writer) throws ModuleException {
+    public void active(final Map<String, String> param, final PrintWriter writer) throws ModuleException {
         int total = 0;
         final String idsStringPattern = getParamWithDefault(param, "ids", EMPTY);
         for (final Module module : search(idsStringPattern)) {
@@ -163,8 +142,7 @@ public class ModuleMgrModule implements Module {
 
     // @Http("/frozen")
     @Command("frozen")
-    public void frozen(final Map<String, String> param,
-                       final PrintWriter writer) throws ModuleException {
+    public void frozen(final Map<String, String> param, final PrintWriter writer) throws ModuleException {
         int total = 0;
         final String idsStringPattern = getParamWithDefault(param, "ids", EMPTY);
         for (final Module module : search(idsStringPattern)) {
@@ -187,8 +165,7 @@ public class ModuleMgrModule implements Module {
 
     // @Http("/detail")
     @Command("detail")
-    public void detail(final Map<String, String> param,
-                       final PrintWriter writer) throws ModuleException {
+    public void detail(final Map<String, String> param, final PrintWriter writer) throws ModuleException {
         final String uniqueId = param.get("id");
         if (StringUtils.isBlank(uniqueId)) {
             // 如果参数不对，则认为找不到对应的沙箱模块，返回400
@@ -221,6 +198,51 @@ public class ModuleMgrModule implements Module {
 
         output(writer, sb);
 
+    }
+
+
+    /**
+     * 获取参数值
+     *
+     * @param param
+     * @param name
+     * @param defaultValue
+     * @return
+     */
+    private String getParamWithDefault(final Map<String, String> param, final String name, final String defaultValue) {
+        final String valueFromReq = param.get(name);
+        return StringUtils.isBlank(valueFromReq)
+                ? defaultValue
+                : valueFromReq;
+    }
+
+    /**
+     * 搜索模块
+     *
+     * @param idsStringPattern
+     * @return
+     */
+    private Collection<Module> search(final String idsStringPattern) {
+        final Collection<Module> foundModules = new ArrayList<Module>();
+        for (Module module : moduleManager.list()) {
+            final Information moduleInfo = module.getClass().getAnnotation(Information.class);
+            if (!matching(moduleInfo.id(), idsStringPattern)) {
+                continue;
+            }
+            foundModules.add(module);
+        }
+        return foundModules;
+    }
+
+    /**
+     * 输出信息到客户端
+     *
+     * @param writer
+     * @param format
+     * @param objectArray
+     */
+    private void output(final PrintWriter writer, final String format, final Object... objectArray) {
+        writer.println(String.format(format, objectArray));
     }
 
 }

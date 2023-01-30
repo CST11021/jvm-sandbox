@@ -12,9 +12,14 @@ import static com.alibaba.jvm.sandbox.core.util.SandboxStringUtils.getCauseMessa
 public class CoreLauncher {
 
 
-    public CoreLauncher(final String targetJvmPid,
-                        final String agentJarPath,
-                        final String token) throws Exception {
+    /**
+     *
+     * @param targetJvmPid  目标JVM进程ID
+     * @param agentJarPath  sandbox-agent.jar包的所在路径
+     * @param token
+     * @throws Exception
+     */
+    public CoreLauncher(final String targetJvmPid, final String agentJarPath, final String token) throws Exception {
 
         // 加载agent
         attachAgent(targetJvmPid, agentJarPath, token);
@@ -26,7 +31,7 @@ public class CoreLauncher {
      *
      * @param args 参数
      *             [0] : PID
-     *             [1] : agent.jar's value
+     *             [1] : agent.jar's value，例如：${HOME}/sandbox/lib/sandbox-agent.jar
      *             [2] : token
      */
     public static void main(String[] args) {
@@ -48,16 +53,22 @@ public class CoreLauncher {
         }
     }
 
-    // 加载Agent
-    private void attachAgent(final String targetJvmPid,
-                             final String agentJarPath,
-                             final String cfg) throws Exception {
+    /**
+     * 加载Agent程序
+     *
+     * @param targetJvmPid
+     * @param agentJarPath
+     * @param cfg
+     * @throws Exception
+     */
+    private void attachAgent(final String targetJvmPid, final String agentJarPath, final String cfg) throws Exception {
 
         VirtualMachine vmObj = null;
         try {
 
             vmObj = VirtualMachine.attach(targetJvmPid);
             if (vmObj != null) {
+                // 将agent程序注入到目标jvm
                 vmObj.loadAgent(agentJarPath, cfg);
             }
 
