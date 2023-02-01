@@ -13,9 +13,7 @@ public class NamespaceConvert extends ClassicConverter {
 
     @Override
     public String convert(ILoggingEvent event) {
-        return null == namespace
-                ? "NULL"
-                : namespace;
+        return null == namespace ? "NULL" : namespace;
     }
 
     /**

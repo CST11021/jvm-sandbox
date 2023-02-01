@@ -234,7 +234,9 @@ public class AgentLauncher {
      */
     private static synchronized InetSocketAddress install(final Map<String, String> featureMap, final Instrumentation inst) {
 
+        // 获取命名空间，默认：default
         final String namespace = getNamespace(featureMap);
+        // 获取沙箱配置文件，默认：${sandboxHome}/cfg/sandbox.properties
         final String propertiesFilePath = getPropertiesFilePath(featureMap);
         final String coreFeatureString = toFeatureString(featureMap);
 
@@ -410,7 +412,7 @@ public class AgentLauncher {
     }
 
     /**
-     * 获取容器配置文件路径
+     * 获取容器配置文件路径，默认：${sandboxHome}/cfg/sandbox.properties
      *
      * @param featureMap
      * @return
@@ -435,7 +437,12 @@ public class AgentLauncher {
         }
     }
 
-    // 将featureMap中的[K,V]对转换为featureString
+    /**
+     * 将featureMap中的[K,V]对转换为featureString
+     *
+     * @param featureMap
+     * @return
+     */
     private static String toFeatureString(final Map<String, String> featureMap) {
         final String sandboxHome = getSandboxHome(featureMap);
         final StringBuilder featureSB = new StringBuilder(

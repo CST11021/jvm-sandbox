@@ -32,12 +32,18 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.NO_SESSIONS;
  */
 public class JettyCoreServer implements CoreServer {
 
-    private static volatile CoreServer coreServer;
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /** 单例：sandbox内核服务 */
+    private static volatile CoreServer coreServer;
+
     private final Initializer initializer = new Initializer(true);
 
+    /** jetty的http服务 */
     private Server httpServer;
+    /** sandbox配置 */
     private CoreConfigure cfg;
+    /** sandbox实例 */
     private JvmSandbox jvmSandbox;
 
     /**
@@ -56,22 +62,23 @@ public class JettyCoreServer implements CoreServer {
         return coreServer;
     }
 
-    public boolean isBind() {
-        return initializer.isInitialized();
-    }
-
+    /**
+     * 服务绑定端口：启动sandbox沙箱实例，并开启http服务
+     *
+     * @param cfg  内核配置信息
+     * @param inst inst
+     * @throws IOException 绑定失败
+     */
     @Override
     public synchronized void bind(final CoreConfigure cfg, final Instrumentation inst) throws IOException {
         this.cfg = cfg;
         try {
+            // 一、启动sandbox内核服务
             initializer.initProcess(new Initializer.Processor() {
                 @Override
                 public void process() throws Throwable {
                     // 1、加载logback配置
-                    LogbackUtils.init(
-                            cfg.getNamespace(),
-                            cfg.getCfgLibPath() + File.separator + "sandbox-logback.xml"
-                    );
+                    LogbackUtils.init(cfg.getNamespace(), cfg.getCfgLibPath() + File.separator + "sandbox-logback.xml");
                     logger.info("initializing server. cfg={}", cfg);
 
                     // 2、创建沙箱
@@ -84,7 +91,7 @@ public class JettyCoreServer implements CoreServer {
                 }
             });
 
-            // 4、初始化加载所有的模块
+            // 二、加载sandbox模块
             try {
                 jvmSandbox.getCoreModuleManager().reset();
             } catch (Throwable cause) {
@@ -92,10 +99,7 @@ public class JettyCoreServer implements CoreServer {
             }
 
             final InetSocketAddress local = getLocal();
-            logger.info("initialized server. actual bind to {}:{}",
-                    local.getHostName(),
-                    local.getPort()
-            );
+            logger.info("initialized server. actual bind to {}:{}", local.getHostName(), local.getPort());
 
         } catch (Throwable cause) {
 
@@ -109,6 +113,10 @@ public class JettyCoreServer implements CoreServer {
         logger.info("{} bind success.", this);
     }
 
+    public boolean isBind() {
+        return initializer.isInitialized();
+    }
+
     @Override
     public void unbind() throws IOException {
         try {
@@ -118,11 +126,9 @@ public class JettyCoreServer implements CoreServer {
                 public void process() throws Throwable {
 
                     if (null != httpServer) {
-
                         // stop http server
                         logger.info("{} is stopping", JettyCoreServer.this);
                         httpServer.stop();
-
                     }
 
                 }
@@ -141,8 +147,7 @@ public class JettyCoreServer implements CoreServer {
 
     @Override
     public InetSocketAddress getLocal() throws IOException {
-        if (!isBind()
-                || null == httpServer) {
+        if (!isBind() || null == httpServer) {
             throw new IOException("server was not bind yet.");
         }
 
@@ -153,22 +158,51 @@ public class JettyCoreServer implements CoreServer {
                 if (connector instanceof SelectChannelConnector) {
                     scc = (SelectChannelConnector) connector;
                     break;
-                }//if
-            }//for
-        }//if
+                }
+            }
+        }
 
         if (null == scc) {
             throw new IllegalStateException("not found SelectChannelConnector");
         }
 
-        return new InetSocketAddress(
-                scc.getHost(),
-                scc.getLocalPort()
-        );
+        return new InetSocketAddress(scc.getHost(), scc.getLocalPort());
     }
 
-    /*
-     * 初始化Jetty's ContextHandler
+    @Override
+    public void destroy() {
+
+        // 关闭JVM-SANDBOX
+        /*
+         * BUGFIX:
+         * jvmSandbox对象在一定情况下可能为空，导致这种情况的可能是destroy()调用发生在bind()方法调用之前
+         * 所以这里做了一个判空处理，临时性解决这个问题。真正需要深究的是为什么destroy()竟然能在bind()之前被调用
+         */
+        if (null != jvmSandbox) {
+            jvmSandbox.destroy();
+        }
+
+        // 关闭HTTP服务器
+        if (isBind()) {
+            try {
+                unbind();
+            } catch (IOException e) {
+                logger.warn("{} unBind failed when destroy.", this, e);
+            }
+        }
+
+        // 关闭LOGBACK
+        LogbackUtils.destroy();
+    }
+
+    @Override
+    public String toString() {
+        return format("server[%s:%s]", cfg.getServerIp(), cfg.getServerPort());
+    }
+
+    /**
+     * 初始化Jetty的请求处理器，可以通过如下请求命令，查看模块信息：
+     * http://localhost:8820/sandbox/default/module/http/sandbox-module-mgr/list
      */
     private void initJettyContextHandler() {
         final String namespace = cfg.getNamespace();
@@ -220,38 +254,5 @@ public class JettyCoreServer implements CoreServer {
         qtp.setDaemon(true);
         qtp.setName("sandbox-jetty-qtp-" + qtp.hashCode());
         httpServer.setThreadPool(qtp);
-    }
-
-
-
-    @Override
-    public void destroy() {
-
-        // 关闭JVM-SANDBOX
-        /*
-         * BUGFIX:
-         * jvmSandbox对象在一定情况下可能为空，导致这种情况的可能是destroy()调用发生在bind()方法调用之前
-         * 所以这里做了一个判空处理，临时性解决这个问题。真正需要深究的是为什么destroy()竟然能在bind()之前被调用
-         */
-        if (null != jvmSandbox) {
-            jvmSandbox.destroy();
-        }
-
-        // 关闭HTTP服务器
-        if (isBind()) {
-            try {
-                unbind();
-            } catch (IOException e) {
-                logger.warn("{} unBind failed when destroy.", this, e);
-            }
-        }
-
-        // 关闭LOGBACK
-        LogbackUtils.destroy();
-    }
-
-    @Override
-    public String toString() {
-        return format("server[%s:%s]", cfg.getServerIp(), cfg.getServerPort());
     }
 }

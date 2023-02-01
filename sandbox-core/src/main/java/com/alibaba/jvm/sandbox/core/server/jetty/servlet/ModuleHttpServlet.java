@@ -48,6 +48,14 @@ public class ModuleHttpServlet extends HttpServlet {
         this.coreModuleManager = coreModuleManager;
     }
 
+    /**
+     * 处理http的get请求，例如：http://localhost:8820/sandbox/default/module/http/sandbox-module-mgr/list
+     *
+     * @param req
+     * @param resp
+     * @throws ServletException
+     * @throws IOException
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setCharacterEncoding(cfg.getServerCharset().name());

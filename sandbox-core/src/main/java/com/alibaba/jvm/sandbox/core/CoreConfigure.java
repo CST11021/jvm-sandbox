@@ -39,7 +39,9 @@ public class CoreConfigure {
 
     private static final String KEY_SANDBOX_HOME = "sandbox_home";
     private static final String KEY_LAUNCH_MODE = "mode";
+    /** Jetty服务绑定的IP，也是目标进程的IP地址，默认配置为：0.0.0.0 */
     private static final String KEY_SERVER_IP = "server.ip";
+    /** Jetty服务端口 */
     private static final String KEY_SERVER_PORT = "server.port";
     private static final String KEY_SERVER_CHARSET = "server.charset";
 
@@ -68,6 +70,12 @@ public class CoreConfigure {
         this.featureMap.putAll(merge(featureMap, propertiesMap));
     }
 
+    /**
+     * 将配置的featureString转为Map
+     *
+     * @param featureString
+     * @return
+     */
     private Map<String, String> toFeatureMap(String featureString) {
         return codec.toMap(featureString);
     }
@@ -106,6 +114,13 @@ public class CoreConfigure {
         return propertiesMap;
     }
 
+    /**
+     * 合并jvm应用的启动参数和sandbox配置文件的参数
+     *
+     * @param featureMap
+     * @param propertiesMap
+     * @return
+     */
     private Map<String, String> merge(Map<String, String> featureMap, Map<String, String> propertiesMap) {
 
         // 以featureMap配置为准
@@ -320,9 +335,9 @@ public class CoreConfigure {
     }
 
     /**
-     * 获取服务器端口
+     * 获取Jetty服务端口
      *
-     * @return 服务器端口
+     * @return Jetty服务端口
      */
     public int getServerPort() {
         return NumberUtils.toInt(featureMap.get(KEY_SERVER_PORT), 0);

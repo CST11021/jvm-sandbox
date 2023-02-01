@@ -10,11 +10,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class Initializer {
 
-    // 是否循环状态
+    /** 是否循环状态 */
     private final boolean isCycleState;
-    // 读写锁
+    /** 读写锁 */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock(true);
-    // 初始化状态
+    /** 初始化状态 */
     private volatile State state = State.NEW;
 
     /**

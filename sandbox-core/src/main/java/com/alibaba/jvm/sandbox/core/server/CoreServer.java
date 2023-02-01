@@ -8,9 +8,19 @@ import java.net.InetSocketAddress;
 
 /**
  * 内核服务器
+ *
  * Created by luanjia@taobao.com on 16/10/2.
  */
 public interface CoreServer {
+
+    /**
+     * 服务绑定端口：启动sandbox沙箱实例，并开启http服务
+     *
+     * @param cfg  内核配置信息
+     * @param inst inst
+     * @throws IOException 绑定失败
+     */
+    void bind(CoreConfigure cfg, Instrumentation inst) throws IOException;
 
     /**
      * 判断服务器是否已经绑定端口
@@ -33,15 +43,6 @@ public interface CoreServer {
      * @throws IOException 绑定失败
      */
     InetSocketAddress getLocal() throws IOException;
-
-    /**
-     * 服务器绑定端口
-     *
-     * @param cfg  内核配置信息
-     * @param inst inst
-     * @throws IOException 绑定失败
-     */
-    void bind(CoreConfigure cfg, Instrumentation inst) throws IOException;
 
     /**
      * 销毁服务器
