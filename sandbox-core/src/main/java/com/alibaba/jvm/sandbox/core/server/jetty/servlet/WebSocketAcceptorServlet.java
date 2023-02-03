@@ -44,8 +44,7 @@ public class WebSocketAcceptorServlet extends WebSocketServlet {
      * @return WebSocket
      */
     @Override
-    public WebSocket doWebSocketConnect(final HttpServletRequest req,
-                                        final String protocol) {
+    public WebSocket doWebSocketConnect(final HttpServletRequest req, final String protocol) {
 
         final String uniqueId = parseUniqueId(req.getPathInfo());
         if (StringUtils.isBlank(uniqueId)) {
@@ -76,7 +75,6 @@ public class WebSocketAcceptorServlet extends WebSocketServlet {
             return new InnerWebSocket(coreModule, listener);
         }
     }
-
 
     /*
      * 从pathInfo中提取module's uniqueId

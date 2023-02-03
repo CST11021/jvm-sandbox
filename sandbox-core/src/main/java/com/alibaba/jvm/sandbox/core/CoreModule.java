@@ -188,8 +188,7 @@ public class CoreModule {
      * @return 资源实体本身
      */
     public <T> T append(ReleaseResource<T> resource) {
-        if (null == resource
-                || null == resource.get()) {
+        if (null == resource || null == resource.get()) {
             return null;
         }
         synchronized (releaseResources) {

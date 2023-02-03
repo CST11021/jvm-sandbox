@@ -36,7 +36,7 @@ public interface CoreModuleManager {
     CoreModule getThrowsExceptionIfNull(String uniqueId) throws ModuleException;
 
     /**
-     * 激活模块
+     * 激活模块：模块被激活后，模块所增强的类将会被激活，所有EventListener将开始收到对应的事件，这里抛出异常将会是阻止模块被激活的唯一方式。
      *
      * @param coreModule 模块业务对象
      * @throws ModuleException 激活模块失败

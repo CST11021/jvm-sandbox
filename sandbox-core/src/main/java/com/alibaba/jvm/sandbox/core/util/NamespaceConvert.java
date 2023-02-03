@@ -23,6 +23,8 @@ public class NamespaceConvert extends ClassicConverter {
      */
     public static void initNamespaceConvert(final String namespace) {
         NamespaceConvert.namespace = namespace;
+        // 添加变量，这样可以在logback.xml配置文件中，通过如下配置，将变量输出到日志
+        // <pattern>%d{yyyy-MM-dd HH:mm:ss} %SANDBOX_NAMESPACE %-5level %msg%n</pattern>
         PatternLayout.defaultConverterMap.put("SANDBOX_NAMESPACE", NamespaceConvert.class.getName());
     }
 

@@ -19,10 +19,10 @@ class ModuleJarLoader {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    // 等待加载的模块jar文件
+    /** 等待加载的模块jar文件 */
     private final File moduleJarFile;
 
-    // 沙箱加载模式
+    /** 沙箱加载模式 */
     private final Information.Mode mode;
 
     ModuleJarLoader(final File moduleJarFile, final Information.Mode mode) {
@@ -30,7 +30,45 @@ class ModuleJarLoader {
         this.mode = mode;
     }
 
+    /**
+     * 加载模块
+     *
+     * @param mCb   加载模块的回调实现
+     * @throws IOException
+     */
+    void load(final ModuleLoadCallback mCb) throws IOException {
 
+        boolean hasModuleLoadedSuccessFlag = false;
+        ModuleJarClassLoader moduleJarClassLoader = null;
+        logger.info("prepare loading module-jar={};", moduleJarFile);
+        try {
+            moduleJarClassLoader = new ModuleJarClassLoader(moduleJarFile);
+
+            final ClassLoader preTCL = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(moduleJarClassLoader);
+
+            try {
+                hasModuleLoadedSuccessFlag = loadingModules(moduleJarClassLoader, mCb);
+            } finally {
+                Thread.currentThread().setContextClassLoader(preTCL);
+            }
+
+        } finally {
+            if (!hasModuleLoadedSuccessFlag && null != moduleJarClassLoader) {
+                logger.warn("loading module-jar completed, but NONE module loaded, will be close ModuleJarClassLoader. module-jar={};", moduleJarFile);
+                moduleJarClassLoader.closeIfPossible();
+            }
+        }
+
+    }
+
+    /**
+     * 通过jdk的SPI机制加载模块
+     *
+     * @param moduleClassLoader
+     * @param mCb
+     * @return
+     */
     private boolean loadingModules(final ModuleJarClassLoader moduleClassLoader, final ModuleLoadCallback mCb) {
 
         final Set<String> loadedModuleUniqueIds = new LinkedHashSet<String>();
@@ -82,6 +120,7 @@ class ModuleJarLoader {
             }
 
             try {
+                // 执行模块加载的回调逻辑，通过该回调将模块注册到模块管理器，并通知模块生命周期
                 if (null != mCb) {
                     mCb.onLoad(uniqueId, classOfModule, module, moduleJarFile, moduleClassLoader);
                 }
@@ -96,9 +135,7 @@ class ModuleJarLoader {
             }
 
             loadedModuleUniqueIds.add(uniqueId);
-
         }
-
 
         logger.info("loaded module-jar completed, loaded {} module in module-jar={}, modules={}",
                 loadedModuleUniqueIds.size(),
@@ -106,34 +143,6 @@ class ModuleJarLoader {
                 loadedModuleUniqueIds
         );
         return !loadedModuleUniqueIds.isEmpty();
-    }
-
-
-    void load(final ModuleLoadCallback mCb) throws IOException {
-
-        boolean hasModuleLoadedSuccessFlag = false;
-        ModuleJarClassLoader moduleJarClassLoader = null;
-        logger.info("prepare loading module-jar={};", moduleJarFile);
-        try {
-            moduleJarClassLoader = new ModuleJarClassLoader(moduleJarFile);
-
-            final ClassLoader preTCL = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(moduleJarClassLoader);
-
-            try {
-                hasModuleLoadedSuccessFlag = loadingModules(moduleJarClassLoader, mCb);
-            } finally {
-                Thread.currentThread().setContextClassLoader(preTCL);
-            }
-
-        } finally {
-            if (!hasModuleLoadedSuccessFlag
-                    && null != moduleJarClassLoader) {
-                logger.warn("loading module-jar completed, but NONE module loaded, will be close ModuleJarClassLoader. module-jar={};", moduleJarFile);
-                moduleJarClassLoader.closeIfPossible();
-            }
-        }
-
     }
 
     /**

@@ -43,9 +43,10 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
     private final CoreConfigure cfg;
     /** 用于将模块代码植入到目标JVM */
     private final Instrumentation inst;
+    /** 内核使用的已加载类管理，模块加载的时候，会将该类注入到模块实例对象中，用于后续的asm字节码增强 */
     private final CoreLoadedClassDataSource classDataSource;
     private final ProviderManager providerManager;
-    /** 模块目录&文件集合 */
+    /** 模块目录&文件集合：包括sandbox系统模块和用户扩展的模块 */
     private final File[] moduleLibDirArray;
     /** 已加载的模块集合 */
     private final Map<String, CoreModule> loadedModuleBOMap = new ConcurrentHashMap<String, CoreModule>();
@@ -75,25 +76,44 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
         );
     }
 
+    /**
+     * 对所有模块做一次卸载和加载的过程，相当于强制刷新，注意这里包括sandbox系统模块和用户扩展的模块
+     *
+     * @return
+     * @throws ModuleException
+     */
     @Override
-    public Collection<CoreModule> list() {
-        return loadedModuleBOMap.values();
-    }
+    public synchronized CoreModuleManager reset() throws ModuleException {
 
-    @Override
-    public CoreModule get(String uniqueId) {
-        return loadedModuleBOMap.get(uniqueId);
-    }
+        logger.info("resetting all loaded modules:{}", loadedModuleBOMap.keySet());
 
-    @Override
-    public CoreModule getThrowsExceptionIfNull(String uniqueId) throws ModuleException {
-        final CoreModule coreModule = get(uniqueId);
-        if (null == coreModule) {
-            throw new ModuleException(uniqueId, MODULE_NOT_EXISTED);
+        // 1. 强制卸载所有模块
+        unloadAll();
+
+        // 2. 加载所有模块
+        for (final File moduleLibDir : moduleLibDirArray) {
+            // 用户模块加载目录，加载用户模块目录下的所有模块
+            // 对模块访问权限进行校验
+            if (moduleLibDir.exists() && moduleLibDir.canRead()) {
+                new ModuleLibLoader(moduleLibDir, cfg.getLaunchMode())
+                        .load(
+                                new InnerModuleJarLoadCallback(),
+                                new InnerModuleLoadCallback()
+                        );
+            } else {
+                logger.warn("module-lib not access, ignore flush load this lib. path={}", moduleLibDir);
+            }
         }
-        return coreModule;
+
+        return this;
     }
 
+    /**
+     * 激活模块：模块被激活后，模块所增强的类将会被激活，所有EventListener将开始收到对应的事件，这里抛出异常将会是阻止模块被激活的唯一方式。
+     *
+     * @param coreModule 模块业务对象
+     * @throws ModuleException 激活模块失败
+     */
     @Override
     public synchronized void active(final CoreModule coreModule) throws ModuleException {
 
@@ -125,6 +145,14 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
         coreModule.markActivated(true);
     }
 
+    /**
+     * 冻结模块：模块冻结时候将会失去所有事件的监听
+     *
+     * @param coreModule              模块业务对象
+     * @param isIgnoreModuleException 是否忽略模块异常
+     *                                强制冻结模块将会主动忽略冻结失败情况，强行将模块所有的事件监听行为关闭
+     * @throws ModuleException
+     */
     @Override
     public synchronized void frozen(final CoreModule coreModule, final boolean isIgnoreModuleException) throws ModuleException {
 
@@ -168,6 +196,8 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
 
     /**
      * 刷新沙箱模块
+     * 强制：对所有已经加载的用户模块进行强行卸载并重新加载
+     * 不强制：找出有变动的用户模块文件，有且仅有改变这些文件所对应的模块
      *
      * @param isForce 是否强制刷新
      * @throws ModuleException 模块加载失败
@@ -179,32 +209,6 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
         } else {
             softFlush();
         }
-    }
-
-    @Override
-    public synchronized CoreModuleManager reset() throws ModuleException {
-
-        logger.info("resetting all loaded modules:{}", loadedModuleBOMap.keySet());
-
-        // 1. 强制卸载所有模块
-        unloadAll();
-
-        // 2. 加载所有模块
-        for (final File moduleLibDir : moduleLibDirArray) {
-            // 用户模块加载目录，加载用户模块目录下的所有模块
-            // 对模块访问权限进行校验
-            if (moduleLibDir.exists() && moduleLibDir.canRead()) {
-                new ModuleLibLoader(moduleLibDir, cfg.getLaunchMode())
-                        .load(
-                                new InnerModuleJarLoadCallback(),
-                                new InnerModuleLoadCallback()
-                        );
-            } else {
-                logger.warn("module-lib not access, ignore flush load this lib. path={}", moduleLibDir);
-            }
-        }
-
-        return this;
     }
 
     /**
@@ -226,8 +230,7 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
         }
 
         logger.info("unloading module, module={};class={};",
-                coreModule.getUniqueId(),
-                coreModule.getModule().getClass().getName()
+                coreModule.getUniqueId(), coreModule.getModule().getClass().getName()
         );
 
         // 尝试冻结模块
@@ -264,6 +267,9 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
         return coreModule;
     }
 
+    /**
+     * 强制卸载所有模块
+     */
     @Override
     public void unloadAll() {
 
@@ -281,73 +287,25 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
 
     }
 
-    private File[] mergeFileArray(File[] aFileArray, File[] bFileArray) {
-        final List<File> _r = new ArrayList<File>();
-        _r.addAll(Arrays.asList(aFileArray));
-        _r.addAll(Arrays.asList(bFileArray));
-        return _r.toArray(new File[]{});
+    @Override
+    public CoreModule get(String uniqueId) {
+        return loadedModuleBOMap.get(uniqueId);
     }
 
-    /*
-     * 通知模块生命周期
-     */
-    private void callAndFireModuleLifeCycle(final CoreModule coreModule, final ModuleLifeCycleType type) throws ModuleException {
-        if (coreModule.getModule() instanceof ModuleLifecycle) {
-            final ModuleLifecycle moduleLifecycle = (ModuleLifecycle) coreModule.getModule();
-            final String uniqueId = coreModule.getUniqueId();
-            switch (type) {
-
-                case MODULE_LOAD: {
-                    try {
-                        moduleLifecycle.onLoad();
-                    } catch (Throwable throwable) {
-                        throw new ModuleException(uniqueId, MODULE_LOAD_ERROR, throwable);
-                    }
-                    break;
-                }
-
-                case MODULE_UNLOAD: {
-                    try {
-                        moduleLifecycle.onUnload();
-                    } catch (Throwable throwable) {
-                        throw new ModuleException(coreModule.getUniqueId(), MODULE_UNLOAD_ERROR, throwable);
-                    }
-                    break;
-                }
-
-                case MODULE_ACTIVE: {
-                    try {
-                        moduleLifecycle.onActive();
-                    } catch (Throwable throwable) {
-                        throw new ModuleException(coreModule.getUniqueId(), MODULE_ACTIVE_ERROR, throwable);
-                    }
-                    break;
-                }
-
-                case MODULE_FROZEN: {
-                    try {
-                        moduleLifecycle.onFrozen();
-                    } catch (Throwable throwable) {
-                        throw new ModuleException(coreModule.getUniqueId(), MODULE_FROZEN_ERROR, throwable);
-                    }
-                    break;
-                }
-
-            }// switch
-        }
-
-        // 这里要对LOAD_COMPLETED事件做特殊处理
-        // 因为这个事件处理失败不会影响模块变更行为，只做简单的日志处理
-        if (type == MODULE_LOAD_COMPLETED
-                && coreModule.getModule() instanceof LoadCompleted) {
-            try {
-                ((LoadCompleted) coreModule.getModule()).loadCompleted();
-            } catch (Throwable cause) {
-                logger.warn("loading module occur error when load-completed. module={};", coreModule.getUniqueId(), cause);
-            }
-        }
-
+    @Override
+    public Collection<CoreModule> list() {
+        return loadedModuleBOMap.values();
     }
+
+    @Override
+    public CoreModule getThrowsExceptionIfNull(String uniqueId) throws ModuleException {
+        final CoreModule coreModule = get(uniqueId);
+        if (null == coreModule) {
+            throw new ModuleException(uniqueId, MODULE_NOT_EXISTED);
+        }
+        return coreModule;
+    }
+
 
     /**
      * 加载并注册模块
@@ -361,9 +319,7 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
      * @param moduleClassLoader 负责加载模块的ClassLoader
      * @throws ModuleException 加载模块失败
      */
-    private synchronized void load(final String uniqueId,
-                                   final Module module,
-                                   final File moduleJarFile,
+    private synchronized void load(final String uniqueId, final Module module, final File moduleJarFile,
                                    final ModuleJarClassLoader moduleClassLoader) throws ModuleException {
 
         if (loadedModuleBOMap.containsKey(uniqueId)) {
@@ -383,6 +339,7 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
         // 注入@Resource资源
         injectResourceOnLoadIfNecessary(coreModule);
 
+        // 通知生命周期
         callAndFireModuleLifeCycle(coreModule, MODULE_LOAD);
 
         // 设置为已经加载
@@ -397,248 +354,6 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
         // 通知生命周期，模块加载完成
         callAndFireModuleLifeCycle(coreModule, MODULE_LOAD_COMPLETED);
 
-    }
-
-    private void injectResourceOnLoadIfNecessary(final CoreModule coreModule) throws ModuleException {
-        try {
-            final Module module = coreModule.getModule();
-            for (final Field resourceField : FieldUtils.getFieldsWithAnnotation(module.getClass(), Resource.class)) {
-                final Class<?> fieldType = resourceField.getType();
-
-                // LoadedClassDataSource对象注入
-                if (LoadedClassDataSource.class.isAssignableFrom(fieldType)) {
-                    writeField(
-                            resourceField,
-                            module,
-                            classDataSource,
-                            true
-                    );
-                }
-
-                // ModuleEventWatcher对象注入
-                else if (ModuleEventWatcher.class.isAssignableFrom(fieldType)) {
-                    final ModuleEventWatcher moduleEventWatcher = coreModule.append(
-                            new ReleaseResource<ModuleEventWatcher>(
-                                    SandboxProtector.instance.protectProxy(
-                                            ModuleEventWatcher.class,
-                                            new DefaultModuleEventWatcher(inst, classDataSource, coreModule, cfg.isEnableUnsafe(), cfg.getNamespace())
-                                    )
-                            ) {
-                                @Override
-                                public void release() {
-                                    logger.info("release all SandboxClassFileTransformer for module={}", coreModule.getUniqueId());
-                                    final ModuleEventWatcher moduleEventWatcher = get();
-                                    if (null != moduleEventWatcher) {
-                                        for (final SandboxClassFileTransformer sandboxClassFileTransformer
-                                                : new ArrayList<SandboxClassFileTransformer>(coreModule.getSandboxClassFileTransformers())) {
-                                            moduleEventWatcher.delete(sandboxClassFileTransformer.getWatchId());
-                                        }
-                                    }
-                                }
-                            });
-
-                    writeField(
-                            resourceField,
-                            module,
-                            moduleEventWatcher,
-                            true
-                    );
-                }
-
-                // ModuleController对象注入
-                else if (ModuleController.class.isAssignableFrom(fieldType)) {
-                    writeField(
-                            resourceField,
-                            module,
-                            new DefaultModuleController(coreModule, this),
-                            true
-                    );
-                }
-
-                // ModuleManager对象注入
-                else if (ModuleManager.class.isAssignableFrom(fieldType)) {
-                    writeField(
-                            resourceField,
-                            module,
-                            new DefaultModuleManager(this),
-                            true
-                    );
-                }
-
-                // ConfigInfo注入
-                else if (ConfigInfo.class.isAssignableFrom(fieldType)) {
-                    writeField(
-                            resourceField,
-                            module,
-                            new DefaultConfigInfo(cfg),
-                            true
-                    );
-                }
-
-                // EventMonitor注入
-                else if (EventMonitor.class.isAssignableFrom(fieldType)) {
-                    writeField(
-                            resourceField,
-                            module,
-                            new EventMonitor() {
-                                @Override
-                                public EventPoolInfo getEventPoolInfo() {
-                                    return new EventPoolInfo() {
-                                        @Override
-                                        public int getNumActive() {
-                                            return 0;
-                                        }
-
-                                        @Override
-                                        public int getNumActive(Event.Type type) {
-                                            return 0;
-                                        }
-
-                                        @Override
-                                        public int getNumIdle() {
-                                            return 0;
-                                        }
-
-                                        @Override
-                                        public int getNumIdle(Event.Type type) {
-                                            return 0;
-                                        }
-                                    };
-                                }
-                            },
-                            true
-                    );
-                }
-
-                // 其他情况需要输出日志警告
-                else {
-                    logger.warn("module inject @Resource ignored: field not found. module={};class={};type={};field={};",
-                            coreModule.getUniqueId(),
-                            coreModule.getModule().getClass().getName(),
-                            fieldType.getName(),
-                            resourceField.getName()
-                    );
-                }
-
-            }
-        } catch (IllegalAccessException cause) {
-            throw new ModuleException(coreModule.getUniqueId(), MODULE_LOAD_ERROR, cause);
-        }
-    }
-
-    private void markActiveOnLoadIfNecessary(final CoreModule coreModule) throws ModuleException {
-        logger.info("active module when OnLoad, module={}", coreModule.getUniqueId());
-        final Information info = coreModule.getModule().getClass().getAnnotation(Information.class);
-        if (info.isActiveOnLoad()) {
-            active(coreModule);
-        }
-    }
-
-    private boolean isOptimisticDirectoryContainsFile(final File directory, final File child) {
-        try {
-            return FileUtils.directoryContains(directory, child);
-        } catch (IOException cause) {
-            // 如果这里能抛出异常，则说明directory或者child发生损坏
-            // 需要返回TRUE以此作乐观推断，出错的情况也属于当前目录
-            // 这个逻辑没毛病,主要是用来应对USER目录被删除引起IOException的情况
-            logger.debug("occur OptimisticDirectoryContainsFile: directory={} or child={} maybe broken.", directory, child, cause);
-            return true;
-        }
-    }
-
-    private boolean isSystemModule(final File child) {
-        return isOptimisticDirectoryContainsFile(new File(cfg.getSystemModuleLibPath()), child);
-    }
-
-    /**
-     * 用户模块文件加载回调
-     */
-    final private class InnerModuleJarLoadCallback implements ModuleJarLoadCallback {
-        @Override
-        public void onLoad(File moduleJarFile) throws Throwable {
-            providerManager.loading(moduleJarFile);
-        }
-    }
-
-    /**
-     * 用户模块加载回调
-     */
-    final private class InnerModuleLoadCallback implements ModuleJarLoader.ModuleLoadCallback {
-        @Override
-        public void onLoad(final String uniqueId,
-                           final Class moduleClass,
-                           final Module module,
-                           final File moduleJarFile,
-                           final ModuleJarClassLoader moduleClassLoader) throws Throwable {
-
-            // 如果之前已经加载过了相同ID的模块，则放弃当前模块的加载
-            if (loadedModuleBOMap.containsKey(uniqueId)) {
-                final CoreModule existedCoreModule = get(uniqueId);
-                logger.info("IMLCB: module already loaded, ignore load this module. expected:module={};class={};loader={}|existed:class={};loader={};",
-                        uniqueId,
-                        moduleClass, moduleClassLoader,
-                        existedCoreModule.getModule().getClass().getName(),
-                        existedCoreModule.getLoader()
-                );
-                return;
-            }
-
-            // 需要经过ModuleLoadingChain的过滤
-            providerManager.loading(
-                    uniqueId,
-                    moduleClass,
-                    module,
-                    moduleJarFile,
-                    moduleClassLoader
-            );
-
-            // 之前没有加载过，这里进行加载
-            logger.info("IMLCB: found new module, prepare to load. module={};class={};loader={};",
-                    uniqueId,
-                    moduleClass,
-                    moduleClassLoader
-            );
-
-            // 这里进行真正的模块加载
-            load(uniqueId, module, moduleJarFile, moduleClassLoader);
-        }
-    }
-
-    /**
-     * 关闭ModuleJarClassLoader
-     * 如ModuleJarClassLoader所加载上来的所有模块都已经被卸载，则该ClassLoader需要主动进行关闭
-     *
-     * @param loader 需要被关闭的ClassLoader
-     */
-    private void closeModuleJarClassLoaderIfNecessary(final ClassLoader loader) {
-
-        if (!(loader instanceof ModuleJarClassLoader)) {
-            return;
-        }
-
-        // 查找已经注册的模块中是否仍然还包含有ModuleJarClassLoader的引用
-        boolean hasRef = false;
-        for (final CoreModule coreModule : loadedModuleBOMap.values()) {
-            if (loader == coreModule.getLoader()) {
-                hasRef = true;
-                break;
-            }
-        }
-
-        if (!hasRef) {
-            logger.info("ModuleJarClassLoader={} will be close: all module unloaded.", loader);
-            ((ModuleJarClassLoader) loader).closeIfPossible();
-        }
-
-    }
-
-    private boolean isChecksumCRC32Existed(long checksumCRC32) {
-        for (final CoreModule coreModule : loadedModuleBOMap.values()) {
-            if (coreModule.getLoader().getChecksumCRC32() == checksumCRC32) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -720,8 +435,7 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
     }
 
     /**
-     * 强制刷新
-     * 对所有已经加载的用户模块进行强行卸载并重新加载
+     * 强制刷新：对所有已经加载的用户模块进行强行卸载并重新加载
      *
      * @throws ModuleException 模块操作失败
      */
@@ -774,6 +488,278 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
     }
 
     /**
+     * 通知模块生命周期
+     */
+    private void callAndFireModuleLifeCycle(final CoreModule coreModule, final ModuleLifeCycleType type) throws ModuleException {
+        if (coreModule.getModule() instanceof ModuleLifecycle) {
+            final ModuleLifecycle moduleLifecycle = (ModuleLifecycle) coreModule.getModule();
+            final String uniqueId = coreModule.getUniqueId();
+            switch (type) {
+
+                case MODULE_LOAD: {
+                    try {
+                        moduleLifecycle.onLoad();
+                    } catch (Throwable throwable) {
+                        throw new ModuleException(uniqueId, MODULE_LOAD_ERROR, throwable);
+                    }
+                    break;
+                }
+
+                case MODULE_UNLOAD: {
+                    try {
+                        moduleLifecycle.onUnload();
+                    } catch (Throwable throwable) {
+                        throw new ModuleException(coreModule.getUniqueId(), MODULE_UNLOAD_ERROR, throwable);
+                    }
+                    break;
+                }
+
+                case MODULE_ACTIVE: {
+                    try {
+                        moduleLifecycle.onActive();
+                    } catch (Throwable throwable) {
+                        throw new ModuleException(coreModule.getUniqueId(), MODULE_ACTIVE_ERROR, throwable);
+                    }
+                    break;
+                }
+
+                case MODULE_FROZEN: {
+                    try {
+                        moduleLifecycle.onFrozen();
+                    } catch (Throwable throwable) {
+                        throw new ModuleException(coreModule.getUniqueId(), MODULE_FROZEN_ERROR, throwable);
+                    }
+                    break;
+                }
+
+            }// switch
+        }
+
+        // 这里要对LOAD_COMPLETED事件做特殊处理
+        // 因为这个事件处理失败不会影响模块变更行为，只做简单的日志处理
+        if (type == MODULE_LOAD_COMPLETED && coreModule.getModule() instanceof LoadCompleted) {
+            try {
+                ((LoadCompleted) coreModule.getModule()).loadCompleted();
+            } catch (Throwable cause) {
+                logger.warn("loading module occur error when load-completed. module={};", coreModule.getUniqueId(), cause);
+            }
+        }
+
+    }
+
+    /**
+     * 注入@Resource注解对象实例
+     *
+     * @param coreModule
+     * @throws ModuleException
+     */
+    private void injectResourceOnLoadIfNecessary(final CoreModule coreModule) throws ModuleException {
+        try {
+            final Module module = coreModule.getModule();
+            // 遍历@Resource注解修饰的字段
+            for (final Field resourceField : FieldUtils.getFieldsWithAnnotation(module.getClass(), Resource.class)) {
+
+                // 获取字段的对象类型
+                final Class<?> fieldType = resourceField.getType();
+
+                // LoadedClassDataSource对象注入
+                if (LoadedClassDataSource.class.isAssignableFrom(fieldType)) {
+                    writeField(resourceField, module, classDataSource, true);
+                }
+
+                // ModuleEventWatcher对象注入
+                else if (ModuleEventWatcher.class.isAssignableFrom(fieldType)) {
+
+                    ModuleEventWatcher protectProxyWatcher = SandboxProtector.instance.protectProxy(
+                            ModuleEventWatcher.class,
+                            new DefaultModuleEventWatcher(inst, classDataSource, coreModule, cfg.isEnableUnsafe(), cfg.getNamespace())
+                    );
+
+                    ReleaseResource<ModuleEventWatcher> resource = new ReleaseResource<ModuleEventWatcher>(protectProxyWatcher) {
+                        @Override
+                        public void release() {
+                            logger.info("release all SandboxClassFileTransformer for module={}", coreModule.getUniqueId());
+                            final ModuleEventWatcher moduleEventWatcher = get();
+                            if (null != moduleEventWatcher) {
+                                for (final SandboxClassFileTransformer sandboxClassFileTransformer
+                                        : new ArrayList<SandboxClassFileTransformer>(coreModule.getSandboxClassFileTransformers())) {
+                                    moduleEventWatcher.delete(sandboxClassFileTransformer.getWatchId());
+                                }
+                            }
+                        }
+                    };
+
+                    final ModuleEventWatcher moduleEventWatcher = coreModule.append(resource);
+
+                    FieldUtils.writeField(resourceField, module, moduleEventWatcher, true);
+                }
+
+                // ModuleController对象注入
+                else if (ModuleController.class.isAssignableFrom(fieldType)) {
+                    writeField(resourceField, module, new DefaultModuleController(coreModule, this), true);
+                }
+
+                // ModuleManager对象注入
+                else if (ModuleManager.class.isAssignableFrom(fieldType)) {
+                    writeField(resourceField, module, new DefaultModuleManager(this), true);
+                }
+
+                // ConfigInfo注入
+                else if (ConfigInfo.class.isAssignableFrom(fieldType)) {
+                    writeField(resourceField, module, new DefaultConfigInfo(cfg), true);
+                }
+
+                // EventMonitor注入
+                else if (EventMonitor.class.isAssignableFrom(fieldType)) {
+                    writeField(
+                            resourceField,
+                            module,
+                            new EventMonitor() {
+                                @Override
+                                public EventPoolInfo getEventPoolInfo() {
+                                    return new EventPoolInfo() {
+                                        @Override
+                                        public int getNumActive() {
+                                            return 0;
+                                        }
+
+                                        @Override
+                                        public int getNumActive(Event.Type type) {
+                                            return 0;
+                                        }
+
+                                        @Override
+                                        public int getNumIdle() {
+                                            return 0;
+                                        }
+
+                                        @Override
+                                        public int getNumIdle(Event.Type type) {
+                                            return 0;
+                                        }
+                                    };
+                                }
+                            },
+                            true
+                    );
+                }
+
+                // 其他情况需要输出日志警告
+                else {
+                    logger.warn("module inject @Resource ignored: field not found. module={};class={};type={};field={};",
+                            coreModule.getUniqueId(),
+                            coreModule.getModule().getClass().getName(),
+                            fieldType.getName(),
+                            resourceField.getName()
+                    );
+                }
+
+            }
+        } catch (IllegalAccessException cause) {
+            throw new ModuleException(coreModule.getUniqueId(), MODULE_LOAD_ERROR, cause);
+        }
+    }
+
+    /**
+     * 如果模块标记了加载时自动激活，则需要在加载完成之后激活模块
+     *
+     * @param coreModule
+     * @throws ModuleException
+     */
+    private void markActiveOnLoadIfNecessary(final CoreModule coreModule) throws ModuleException {
+        logger.info("active module when OnLoad, module={}", coreModule.getUniqueId());
+        final Information info = coreModule.getModule().getClass().getAnnotation(Information.class);
+        if (info.isActiveOnLoad()) {
+            active(coreModule);
+        }
+    }
+
+    /**
+     * 判断是否是sandbox系统模块
+     *
+     * @param child
+     * @return
+     */
+    private boolean isSystemModule(final File child) {
+        return isOptimisticDirectoryContainsFile(new File(cfg.getSystemModuleLibPath()), child);
+    }
+
+    /**
+     * 判断目录下是否包含文件
+     *
+     * @param directory 目录
+     * @param child     文件
+     * @return
+     */
+    private boolean isOptimisticDirectoryContainsFile(final File directory, final File child) {
+        try {
+            return FileUtils.directoryContains(directory, child);
+        } catch (IOException cause) {
+            // 如果这里能抛出异常，则说明directory或者child发生损坏
+            // 需要返回TRUE以此作乐观推断，出错的情况也属于当前目录
+            // 这个逻辑没毛病,主要是用来应对USER目录被删除引起IOException的情况
+            logger.debug("occur OptimisticDirectoryContainsFile: directory={} or child={} maybe broken.", directory, child, cause);
+            return true;
+        }
+    }
+
+    /**
+     * 关闭ModuleJarClassLoader，如ModuleJarClassLoader所加载上来的所有模块都已经被卸载，则该ClassLoader需要主动进行关闭
+     *
+     * @param loader 需要被关闭的ClassLoader
+     */
+    private void closeModuleJarClassLoaderIfNecessary(final ClassLoader loader) {
+
+        if (!(loader instanceof ModuleJarClassLoader)) {
+            return;
+        }
+
+        // 查找已经注册的模块中是否仍然还包含有ModuleJarClassLoader的引用
+        boolean hasRef = false;
+        for (final CoreModule coreModule : loadedModuleBOMap.values()) {
+            if (loader == coreModule.getLoader()) {
+                hasRef = true;
+                break;
+            }
+        }
+
+        if (!hasRef) {
+            logger.info("ModuleJarClassLoader={} will be close: all module unloaded.", loader);
+            ((ModuleJarClassLoader) loader).closeIfPossible();
+        }
+
+    }
+
+    /**
+     * 通过CRC32码校验
+     *
+     * @param checksumCRC32
+     * @return
+     */
+    private boolean isChecksumCRC32Existed(long checksumCRC32) {
+        for (final CoreModule coreModule : loadedModuleBOMap.values()) {
+            if (coreModule.getLoader().getChecksumCRC32() == checksumCRC32) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 数组合并
+     *
+     * @param aFileArray
+     * @param bFileArray
+     * @return
+     */
+    private File[] mergeFileArray(File[] aFileArray, File[] bFileArray) {
+        final List<File> _r = new ArrayList<File>();
+        _r.addAll(Arrays.asList(aFileArray));
+        _r.addAll(Arrays.asList(bFileArray));
+        return _r.toArray(new File[]{});
+    }
+
+    /**
      * 模块生命周期类型
      */
     enum ModuleLifeCycleType {
@@ -802,6 +788,58 @@ public class DefaultCoreModuleManager implements CoreModuleManager {
          * 模块加载完成
          */
         MODULE_LOAD_COMPLETED
+    }
+
+    /**
+     * 用户模块文件加载回调
+     */
+    final private class InnerModuleJarLoadCallback implements ModuleJarLoadCallback {
+        @Override
+        public void onLoad(File moduleJarFile) throws Throwable {
+            providerManager.loading(moduleJarFile);
+        }
+    }
+
+    /**
+     * 用户模块加载回调
+     */
+    final private class InnerModuleLoadCallback implements ModuleJarLoader.ModuleLoadCallback {
+
+        @Override
+        public void onLoad(final String uniqueId,
+                           final Class moduleClass,
+                           final Module module,
+                           final File moduleJarFile,
+                           final ModuleJarClassLoader moduleClassLoader) throws Throwable {
+
+            // 如果之前已经加载过了相同ID的模块，则放弃当前模块的加载
+            if (loadedModuleBOMap.containsKey(uniqueId)) {
+                final CoreModule existedCoreModule = get(uniqueId);
+                logger.info("IMLCB: module already loaded, ignore load this module. expected:module={};class={};loader={}|existed:class={};loader={};",
+                        uniqueId,
+                        moduleClass, moduleClassLoader,
+                        existedCoreModule.getModule().getClass().getName(),
+                        existedCoreModule.getLoader()
+                );
+                return;
+            }
+
+            // 需要经过ModuleLoadingChain的过滤
+            providerManager.loading(
+                    uniqueId,
+                    moduleClass,
+                    module,
+                    moduleJarFile,
+                    moduleClassLoader
+            );
+
+            // 之前没有加载过，这里进行加载
+            logger.info("IMLCB: found new module, prepare to load. module={};class={};loader={};",
+                    uniqueId, moduleClass, moduleClassLoader);
+
+            // 这里进行真正的模块加载
+            load(uniqueId, module, moduleJarFile, moduleClassLoader);
+        }
     }
 
 }

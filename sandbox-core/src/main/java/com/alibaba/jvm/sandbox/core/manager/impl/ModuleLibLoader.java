@@ -21,10 +21,10 @@ class ModuleLibLoader {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    // 模块加载目录
+    /** 模块加载目录 */
     private final File moduleLibDir;
 
-    // 沙箱加载模式
+    /** 沙箱加载模式 */
     private final Information.Mode mode;
 
     ModuleLibLoader(final File moduleLibDir, final Information.Mode mode) {
@@ -69,7 +69,9 @@ class ModuleLibLoader {
         // 开始逐条加载
         for (final File moduleJarFile : listModuleJarFileInLib()) {
             try {
+                // 加载模块目录文件夹的时候有一个回调扩展
                 mjCb.onLoad(moduleJarFile);
+                // 加载每个模块jar包的时候有一个模块加载回调的扩展
                 new ModuleJarLoader(moduleJarFile, mode).load(mCb);
             } catch (Throwable cause) {
                 logger.warn("loading module-jar occur error! module-jar={};", moduleJarFile, cause);

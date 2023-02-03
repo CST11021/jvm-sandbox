@@ -48,8 +48,7 @@ public class ModuleJarClassLoader extends RoutingURLClassLoader {
         this(moduleJarFile, copyToTempFile(moduleJarFile));
     }
 
-    private ModuleJarClassLoader(final File moduleJarFile,
-                                 final File tempModuleJarFile) throws IOException {
+    private ModuleJarClassLoader(final File moduleJarFile, final File tempModuleJarFile) throws IOException {
         super(
                 new URL[]{new URL("file:" + tempModuleJarFile.getPath())},
                 new Routing(
@@ -104,6 +103,9 @@ public class ModuleJarClassLoader extends RoutingURLClassLoader {
 
     }
 
+    /**
+     * 模块卸载时触发SPI实现
+     */
     private void onJarUnLoadCompleted() {
         try {
             final ServiceLoader<ModuleJarUnLoadSpi> moduleJarUnLoadSpiServiceLoader
