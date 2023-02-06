@@ -14,6 +14,11 @@ package com.alibaba.jvm.sandbox.core.util.matcher.structure;
  */
 public interface Access {
 
+    /**
+     *
+     *
+     * @return
+     */
     boolean isPublic();
 
     boolean isPrivate();

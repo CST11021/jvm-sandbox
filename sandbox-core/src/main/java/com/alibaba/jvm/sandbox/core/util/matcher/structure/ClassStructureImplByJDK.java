@@ -183,8 +183,7 @@ public class ClassStructureImplByJDK extends FamilyClassStructure {
         return annotationTypes.toArray(new Class[0]);
     }
 
-    private final LazyGet<List<ClassStructure>> annotationTypeClassStructuresLazyGet
-            = new LazyGet<List<ClassStructure>>() {
+    private final LazyGet<List<ClassStructure>> annotationTypeClassStructuresLazyGet = new LazyGet<List<ClassStructure>>() {
         @Override
         protected List<ClassStructure> initialValue() {
             return Collections.unmodifiableList(newInstances(getAnnotationTypeArray(clazz.getDeclaredAnnotations())));
@@ -220,8 +219,7 @@ public class ClassStructureImplByJDK extends FamilyClassStructure {
         );
     }
 
-    private final LazyGet<List<BehaviorStructure>> behaviorStructuresLazyGet
-            = new LazyGet<List<BehaviorStructure>>() {
+    private final LazyGet<List<BehaviorStructure>> behaviorStructuresLazyGet = new LazyGet<List<BehaviorStructure>>() {
         @Override
         protected List<BehaviorStructure> initialValue() {
             final List<BehaviorStructure> behaviorStructures = new ArrayList<BehaviorStructure>();

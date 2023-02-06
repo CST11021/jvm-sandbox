@@ -56,9 +56,13 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
     }
 
 
-    // 开始进度
-    private void beginProgress(final Progress progress,
-                               final int total) {
+    /**
+     * 触发 ModuleEventWatcher.Progress#begin(int) 通知开始进行类变形
+     *
+     * @param progress
+     * @param total
+     */
+    private void beginProgress(final Progress progress, final int total) {
         if (null != progress) {
             try {
                 progress.begin(total);
@@ -68,7 +72,13 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
         }
     }
 
-    // 结束进度
+    /**
+     * 触发 ModuleEventWatcher.Progress#finish(int, int) 通知类变形已结束
+     *
+     * @param progress  要通知的进度处理器
+     * @param cCnt      影响的类数量
+     * @param mCnt      影响的方法数量
+     */
     private void finishProgress(final Progress progress, final int cCnt, final int mCnt) {
         if (null != progress) {
             try {
@@ -79,13 +89,15 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
         }
     }
 
-    /*
-     * 形变观察所影响的类
+    /**
+     * 真正执行类增强逻辑植入的实现，通过如下代码实现：
+     * java.lang.instrument.Instrumentation#retransformClasses(java.lang.Class[])
+     *
+     * @param watchId
+     * @param waitingReTransformClasses
+     * @param progress
      */
-    private void reTransformClasses(
-        final int watchId,
-        final List<Class<?>> waitingReTransformClasses,
-        final Progress progress) {
+    private void reTransformClasses(final int watchId, final List<Class<?>> waitingReTransformClasses, final Progress progress) {
         // 需要形变总数
         final int total = waitingReTransformClasses.size();
 
@@ -116,11 +128,17 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
                         );
                     }
                 }
+
+
+
+                // 进行类变形
                 inst.retransformClasses(waitingReTransformClass);
                 logger.info("watch={} in module={} single reTransform {} success, at index={};total={};",
                         watchId, coreModule.getUniqueId(), waitingReTransformClass,
                         index - 1, total
                 );
+
+
             } catch (Throwable causeOfReTransform) {
                 logger.warn("watch={} in module={} single reTransform {} failed, at index={};total={}. ignore this class.",
                         watchId, coreModule.getUniqueId(), waitingReTransformClass,
@@ -143,31 +161,10 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
 
     }
 
-    @Override
-    public int watch(final Filter filter,
-                     final EventListener listener,
-                     final Event.Type... eventType) {
-        return watch(filter, listener, null, eventType);
-    }
 
-    @Override
-    public int watch(final Filter filter,
-                     final EventListener listener,
-                     final Progress progress,
-                     final Event.Type... eventType) {
-        return watch(new ExtFilterMatcher(make(filter)), listener, progress, eventType);
-    }
-
-    @Override
-    public int watch(final EventWatchCondition condition,
-                     final EventListener listener,
-                     final Progress progress,
-                     final Event.Type... eventType) {
-        return watch(toOrGroupMatcher(condition.getOrFilterArray()), listener, progress, eventType);
-    }
 
     /**
-     * 这里是用matcher重制过后的watch
+     * 核心实现：这里是用matcher重制过后的watch
      *
      * @param matcher
      * @param listener
@@ -205,7 +202,7 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
         try {
 
             // 应用JVM
-            reTransformClasses(watchId,waitingReTransformClasses, progress);
+            reTransformClasses(watchId, waitingReTransformClasses, progress);
 
             // 计数
             cCnt += sandClassFileTransformer.getAffectStatistic().cCnt();
@@ -215,8 +212,7 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
             // 激活增强类
             if (coreModule.isActivated()) {
                 final int listenerId = sandClassFileTransformer.getListenerId();
-                EventListenerHandler.getSingleton()
-                        .active(listenerId, listener, eventType);
+                EventListenerHandler.getSingleton().active(listenerId, listener, eventType);
             }
 
         } finally {
@@ -225,10 +221,23 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
 
         return watchId;
     }
+    @Override
+    public int watch(final Filter filter, final EventListener listener, final Event.Type... eventType) {
+        return watch(filter, listener, null, eventType);
+    }
+    @Override
+    public int watch(final Filter filter, final EventListener listener, final Progress progress, final Event.Type... eventType) {
+        return watch(new ExtFilterMatcher(make(filter)), listener, progress, eventType);
+    }
+    @Override
+    public int watch(final EventWatchCondition condition, final EventListener listener, final Progress progress, final Event.Type... eventType) {
+        return watch(toOrGroupMatcher(condition.getOrFilterArray()), listener, progress, eventType);
+    }
+
+
 
     @Override
-    public void delete(final int watcherId,
-                       final Progress progress) {
+    public void delete(final int watcherId, final Progress progress) {
 
         final Set<Matcher> waitingRemoveMatcherSet = new LinkedHashSet<Matcher>();
 
@@ -277,16 +286,12 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
             finishProgress(progress, cCnt, mCnt);
         }
     }
-
     @Override
     public void delete(int watcherId) {
         delete(watcherId, null);
     }
 
-    @Override
-    public void watching(Filter filter, EventListener listener, WatchCallback watchCb, Event.Type... eventType) throws Throwable {
-        watching(filter, listener, null, watchCb, null, eventType);
-    }
+
 
     @Override
     public void watching(final Filter filter,
@@ -301,6 +306,10 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
         } finally {
             delete(watchId, dProgress);
         }
+    }
+    @Override
+    public void watching(Filter filter, EventListener listener, WatchCallback watchCb, Event.Type... eventType) throws Throwable {
+        watching(filter, listener, null, watchCb, null, eventType);
     }
 
 }

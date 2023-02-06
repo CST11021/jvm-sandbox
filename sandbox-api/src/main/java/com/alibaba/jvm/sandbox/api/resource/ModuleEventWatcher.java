@@ -151,6 +151,17 @@ public interface ModuleEventWatcher {
         void begin(int total);
 
         /**
+         * 进度结束
+         * <p>如果是add方法，则影响的数量是递增；</p>
+         * <p>如果是remove方法，则影响的数量是递减；</p>
+         * <p>当彻remove完成之后，cCnt = mCnt = 0;</p>
+         *
+         * @param cCnt 影响类总数
+         * @param mCnt 影响方法总数
+         */
+        void finish(int cCnt, int mCnt);
+
+        /**
          * 进度报告(成功)
          *
          * @param clazz 当前进行行变的类
@@ -166,17 +177,6 @@ public interface ModuleEventWatcher {
          * @param cause 失败异常
          */
         void progressOnFailed(Class<?> clazz, int index, Throwable cause);
-
-        /**
-         * 进度结束
-         * <p>如果是add方法，则影响的数量是递增；</p>
-         * <p>如果是remove方法，则影响的数量是递减；</p>
-         * <p>当彻remove完成之后，cCnt = mCnt = 0;</p>
-         *
-         * @param cCnt 影响类总数
-         * @param mCnt 影响方法总数
-         */
-        void finish(int cCnt, int mCnt);
 
     }
 

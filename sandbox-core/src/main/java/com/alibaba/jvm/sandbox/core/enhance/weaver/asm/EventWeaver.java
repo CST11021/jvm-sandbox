@@ -79,6 +79,18 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
     private final boolean hasCallReturn;
     private final boolean isCallEnable;
 
+    /**
+     * 通过 EventEnhancer#toByteCodeArray() 方法将事件编织器植入目标，这样类行为方法调用的时候，就可以通过this.visitMethod()进行回调了
+     *
+     * @param api
+     * @param cv
+     * @param namespace
+     * @param listenerId
+     * @param targetClassLoaderObjectID
+     * @param targetClassInternalName
+     * @param signCodes
+     * @param eventTypeArray
+     */
     public EventWeaver(final int api,
                        final ClassVisitor cv,
                        final String namespace,
@@ -102,43 +114,29 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
         this.isCallEnable = hasCallBefore || hasCallReturn || hasCallThrows;
     }
 
-    private boolean isMatchedBehavior(final String signCode) {
-        return signCodes.contains(signCode);
-    }
-
-    private String getBehaviorSignCode(final String name,
-                                       final String desc) {
-        final StringBuilder sb = new StringBuilder(256).append(targetJavaClassName).append("#").append(name).append("(");
-
-        final Type[] methodTypes = Type.getMethodType(desc).getArgumentTypes();
-        if (methodTypes.length != 0) {
-            sb.append(methodTypes[0].getClassName());
-            for (int i = 1; i < methodTypes.length; i++) {
-                sb.append(",").append(methodTypes[i].getClassName());
-            }
-        }
-
-        return sb.append(")").toString();
-    }
-
+    /**
+     * 通过 EventEnhancer#toByteCodeArray() 方法将事件编织器植入目标，这样类行为方法调用的时候，就可以通过该进行回调了
+     *
+     * @param access
+     * @param name
+     * @param desc
+     * @param signature
+     * @param exceptions
+     * @return
+     */
     @Override
     public MethodVisitor visitMethod(final int access, final String name, final String desc, final String signature, final String[] exceptions) {
 
         final MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
         final String signCode = getBehaviorSignCode(name, desc);
+
+        // 判断是不是我们关注的切点签名
         if (!isMatchedBehavior(signCode)) {
-            logger.debug("non-rewrite method {} for listener[id={}];",
-                    signCode,
-                    listenerId
-            );
+            logger.debug("non-rewrite method {} for listener[id={}];", signCode, listenerId);
             return mv;
         }
 
-        logger.info("rewrite method {} for listener[id={}];event={};",
-                signCode,
-                listenerId,
-                join(eventTypeArray, ",")
-        );
+        logger.info("rewrite method {} for listener[id={}];event={};", signCode, listenerId, join(eventTypeArray, ","));
 
         return new ReWriteMethod(api, new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions), access, name, desc) {
 
@@ -154,45 +152,23 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
             // 所以这里需要用一个标记为告知后续的代码编织，绕开super()和this()
             private boolean isMethodEnter = false;
 
-            // 代码锁
+            /** 代码锁 */
             private final CodeLock codeLockForTracing = new CallAsmCodeLock(this);
 
+            /** 用于tracing的当前行号 */
+            private int tracingCurrentLineNumber = -1;
+
+            /** 用于try-catch的重排序：目的是让call的try...catch能在exceptions tables排在前边 */
+            private final ArrayList<AsmTryCatchBlock> asmTryCatchBlocks = new ArrayList<AsmTryCatchBlock>();
+
+
             /**
-             * 流程控制
+             * 触发 {@link Spy#spyMethodOnBefore(Object[], String, int, int, String, String, String, Object)}
              */
-            private void processControl() {
-                final Label finishLabel = new Label();
-                final Label returnLabel = new Label();
-                final Label throwsLabel = new Label();
-                dup();
-                visitFieldInsn(GETFIELD, ASM_TYPE_SPY_RET, "state", ASM_TYPE_INT);
-                dup();
-                push(Spy.Ret.RET_STATE_RETURN);
-                ifICmp(EQ, returnLabel);
-                push(Spy.Ret.RET_STATE_THROWS);
-                ifICmp(EQ, throwsLabel);
-                goTo(finishLabel);
-                mark(returnLabel);
-                pop();
-                visitFieldInsn(GETFIELD, ASM_TYPE_SPY_RET, "respond", ASM_TYPE_OBJECT);
-                checkCastReturn(Type.getReturnType(desc));
-                goTo(finishLabel);
-                mark(throwsLabel);
-                visitFieldInsn(GETFIELD, ASM_TYPE_SPY_RET, "respond", ASM_TYPE_OBJECT);
-                checkCast(ASM_TYPE_THROWABLE);
-                throwException();
-                mark(finishLabel);
-                pop();
-            }
-
-            // 加载ClassLoader
-            private void loadClassLoader() {
-                push(targetClassLoaderObjectID);
-            }
-
             @Override
             protected void onMethodEnter() {
                 codeLockForTracing.lock(new CodeLock.Block() {
+
                     @Override
                     public void code() {
                         mark(beginLabel);
@@ -212,50 +188,8 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
                         processControl();
                         isMethodEnter = true;
                     }
+
                 });
-            }
-
-            /**
-             * 是否抛出异常返回(通过字节码判断)
-             *
-             * @param opcode 操作码
-             * @return true:以抛异常形式返回 / false:非抛异常形式返回(return)
-             */
-            private boolean isThrow(int opcode) {
-                return opcode == ATHROW;
-            }
-
-            /**
-             * 加载返回值
-             * @param opcode 操作吗
-             */
-            private void loadReturn(int opcode) {
-                switch (opcode) {
-
-                    case RETURN: {
-                        pushNull();
-                        break;
-                    }
-
-                    case ARETURN: {
-                        dup();
-                        break;
-                    }
-
-                    case LRETURN:
-                    case DRETURN: {
-                        dup2();
-                        box(Type.getReturnType(methodDesc));
-                        break;
-                    }
-
-                    default: {
-                        dup();
-                        box(Type.getReturnType(methodDesc));
-                        break;
-                    }
-
-                }
             }
 
             @Override
@@ -299,9 +233,6 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
                 super.visitMaxs(maxStack, maxLocals);
             }
 
-            // 用于tracing的当前行号
-            private int tracingCurrentLineNumber = -1;
-
             @Override
             public void visitLineNumber(final int lineNumber, Label label) {
                 if (isMethodEnter && isLineEnable) {
@@ -326,11 +257,7 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
             }
 
             @Override
-            public void visitMethodInsn(final int opcode,
-                                        final String owner,
-                                        final String name,
-                                        final String desc,
-                                        final boolean itf) {
+            public void visitMethodInsn(final int opcode, final String owner, final String name, final String desc, final boolean itf) {
 
                 // 如果CALL事件没有启用，则不需要对CALL进行增强
                 // 如果正在CALL的方法来自于SANDBOX本身，则不需要进行追踪
@@ -423,16 +350,10 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
 
             }
 
-            // 用于try-catch的重排序
-            // 目的是让call的try...catch能在exceptions tables排在前边
-            private final ArrayList<AsmTryCatchBlock> asmTryCatchBlocks = new ArrayList<AsmTryCatchBlock>();
-
             @Override
             public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
                 asmTryCatchBlocks.add(new AsmTryCatchBlock(start, end, handler, type));
             }
-
-
 
             @Override
             public void visitEnd() {
@@ -443,6 +364,106 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
                 super.visitEnd();
             }
 
+
+
+            /**
+             * 流程控制
+             */
+            private void processControl() {
+                final Label finishLabel = new Label();
+                final Label returnLabel = new Label();
+                final Label throwsLabel = new Label();
+                dup();
+                visitFieldInsn(GETFIELD, ASM_TYPE_SPY_RET, "state", ASM_TYPE_INT);
+                dup();
+                push(Spy.Ret.RET_STATE_RETURN);
+                ifICmp(EQ, returnLabel);
+                push(Spy.Ret.RET_STATE_THROWS);
+                ifICmp(EQ, throwsLabel);
+                goTo(finishLabel);
+                mark(returnLabel);
+                pop();
+                visitFieldInsn(GETFIELD, ASM_TYPE_SPY_RET, "respond", ASM_TYPE_OBJECT);
+                checkCastReturn(Type.getReturnType(desc));
+                goTo(finishLabel);
+                mark(throwsLabel);
+                visitFieldInsn(GETFIELD, ASM_TYPE_SPY_RET, "respond", ASM_TYPE_OBJECT);
+                checkCast(ASM_TYPE_THROWABLE);
+                throwException();
+                mark(finishLabel);
+                pop();
+            }
+
+            /**
+             * 加载ClassLoader
+             */
+            private void loadClassLoader() {
+                push(targetClassLoaderObjectID);
+            }
+
+            /**
+             * 是否抛出异常返回(通过字节码判断)
+             *
+             * @param opcode 操作码
+             * @return true:以抛异常形式返回 / false:非抛异常形式返回(return)
+             */
+            private boolean isThrow(int opcode) {
+                return opcode == ATHROW;
+            }
+
+            /**
+             * 加载返回值
+             * @param opcode 操作吗
+             */
+            private void loadReturn(int opcode) {
+                switch (opcode) {
+
+                    case RETURN: {
+                        pushNull();
+                        break;
+                    }
+
+                    case ARETURN: {
+                        dup();
+                        break;
+                    }
+
+                    case LRETURN:
+                    case DRETURN: {
+                        dup2();
+                        box(Type.getReturnType(methodDesc));
+                        break;
+                    }
+
+                    default: {
+                        dup();
+                        box(Type.getReturnType(methodDesc));
+                        break;
+                    }
+
+                }
+            }
+
         };
     }
+
+    private boolean isMatchedBehavior(final String signCode) {
+        return signCodes.contains(signCode);
+    }
+
+    private String getBehaviorSignCode(final String name, final String desc) {
+        final StringBuilder sb = new StringBuilder(256).append(targetJavaClassName).append("#").append(name).append("(");
+
+        final Type[] methodTypes = Type.getMethodType(desc).getArgumentTypes();
+        if (methodTypes.length != 0) {
+            sb.append(methodTypes[0].getClassName());
+            for (int i = 1; i < methodTypes.length; i++) {
+                sb.append(",").append(methodTypes[i].getClassName());
+            }
+        }
+
+        return sb.append(")").toString();
+    }
+
+
 }

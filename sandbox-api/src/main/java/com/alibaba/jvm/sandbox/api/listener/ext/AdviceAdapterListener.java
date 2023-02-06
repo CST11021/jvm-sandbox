@@ -48,8 +48,7 @@ public class AdviceAdapterListener implements EventListener {
 
 
     // 执行事件
-    private void switchEvent(final OpStack opStack,
-                             final Event event) throws Throwable {
+    private void switchEvent(final OpStack opStack, final Event event) throws Throwable {
 
         switch (event.type) {
             case BEFORE: {

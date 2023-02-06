@@ -73,8 +73,7 @@ public class DefaultCoreLoadedClassDataSource implements CoreLoadedClassDataSour
         return find(matcher, true);
     }
 
-    private List<Class<?>> find(final Matcher matcher,
-                                final boolean isRemoveUnsupported) {
+    private List<Class<?>> find(final Matcher matcher, final boolean isRemoveUnsupported) {
 
         SandboxProtector.instance.enterProtecting();
         try {
@@ -94,8 +93,7 @@ public class DefaultCoreLoadedClassDataSource implements CoreLoadedClassDataSour
                 }
 
                 // 过滤掉对于JVM认为不可修改的类
-                if (isRemoveUnsupported
-                        && !inst.isModifiableClass(clazz)) {
+                if (isRemoveUnsupported && !inst.isModifiableClass(clazz)) {
                     // logger.debug("remove from findForReTransform, because class:{} is unModifiable", clazz.getName());
                     continue;
                 }

@@ -3,10 +3,7 @@ package com.alibaba.jvm.sandbox.core.util.matcher;
 import com.alibaba.jvm.sandbox.core.util.matcher.structure.ClassStructure;
 
 /**
- * 匹配器
- * <p>
- * 可以判断当前类结构是否符合要求
- * </p>
+ * 匹配器：可以判断当前类结构是否符合要求
  *
  * @author luanjia@taobao.com
  */

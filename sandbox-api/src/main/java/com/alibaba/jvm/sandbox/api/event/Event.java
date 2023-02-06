@@ -41,22 +41,13 @@ public abstract class Event {
      */
     public enum Type {
 
-        /**
-         * 调用:BEFORE
-         */
+        /** 执行方法体之前被调用 */
         BEFORE,
-        /**
-         * 调用:RETURN
-         */
+        /** 执行方法体返回之前被调用 */
         RETURN,
-        /**
-         * 调用:THROWS
-         */
+        /** 执行方法体抛出异常之前被调用 */
         THROWS,
-        /**
-         * 调用:LINE
-         * 一行被调用了
-         */
+        /** 方法行被执行后调用，目前仅记录行号 */
         LINE,
 
         //
@@ -73,20 +64,11 @@ public abstract class Event {
         // }
         //
 
-        /**
-         * 调用:CALL_BEFORE
-         * 一个方法被调用之前
-         */
+        /** 一个方法被调用之前 */
         CALL_BEFORE,
-        /**
-         * 调用:CALL_RETURN
-         * 一个方法被调用正常返回之后
-         */
+        /** 一个方法被调用正常返回之后 */
         CALL_RETURN,
-        /**
-         * 调用:CALL_THROWS
-         * 一个方法被调用抛出异常之后
-         */
+        /** 一个方法被调用抛出异常之后 */
         CALL_THROWS,
 
         /**

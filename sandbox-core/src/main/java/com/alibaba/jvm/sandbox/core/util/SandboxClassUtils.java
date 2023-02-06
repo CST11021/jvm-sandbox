@@ -23,8 +23,7 @@ public class SandboxClassUtils {
     public static boolean isComeFromSandboxFamily(final String internalClassName, final ClassLoader loader) {
 
         // 类名是com.alibaba.jvm.sandbox开头
-        if (null != internalClassName
-                && isSandboxPrefix(internalClassName)) {
+        if (null != internalClassName && isSandboxPrefix(internalClassName)) {
             return true;
         }
 

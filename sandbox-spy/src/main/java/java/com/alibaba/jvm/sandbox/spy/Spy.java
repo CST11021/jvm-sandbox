@@ -24,14 +24,12 @@ public class Spy {
      * F:不对外抛出，只将异常信息打印出来
      */
     public static volatile boolean isSpyThrowException = false;
-
     private static final SelfCallBarrier selfCallBarrier = new SelfCallBarrier();
-
-    // 全局序列
+    /** 全局序列 */
     private static final AtomicInteger sequenceRef = new AtomicInteger(1000);
-
     /** Map<namespace, SpyHandler> */
     private static final ConcurrentHashMap<String, SpyHandler> namespaceSpyHandlerMap = new ConcurrentHashMap<String, SpyHandler>();
+
 
 
     /**
@@ -81,10 +79,10 @@ public class Spy {
 
 
 
-
     // 方法调用事件函数
 
     /**
+     * 一个方法被调用之前
      *
      * @param lineNumber
      * @param owner
@@ -110,6 +108,13 @@ public class Spy {
         }
     }
 
+    /**
+     * 一个方法被调用正常返回之后
+     *
+     * @param namespace
+     * @param listenerId
+     * @throws Throwable
+     */
     public static void spyMethodOnCallReturn(final String namespace,
                                              final int listenerId) throws Throwable {
         try {
@@ -122,6 +127,14 @@ public class Spy {
         }
     }
 
+    /**
+     * 一个方法被调用抛出异常之后
+     *
+     * @param throwException
+     * @param namespace
+     * @param listenerId
+     * @throws Throwable
+     */
     public static void spyMethodOnCallThrows(final String throwException,
                                              final String namespace,
                                              final int listenerId) throws Throwable {
@@ -135,6 +148,14 @@ public class Spy {
         }
     }
 
+    /**
+     * 方法行被执行后调用，目前仅记录行号
+     *
+     * @param lineNumber
+     * @param namespace
+     * @param listenerId
+     * @throws Throwable
+     */
     public static void spyMethodOnLine(final int lineNumber,
                                        final String namespace,
                                        final int listenerId) throws Throwable {
@@ -148,6 +169,20 @@ public class Spy {
         }
     }
 
+    /**
+     * 执行方法体之前被调用
+     *
+     * @param argumentArray
+     * @param namespace
+     * @param listenerId                    要触发的监听ID
+     * @param targetClassLoaderObjectID
+     * @param javaClassName
+     * @param javaMethodName
+     * @param javaMethodDesc
+     * @param target
+     * @return
+     * @throws Throwable
+     */
     public static Ret spyMethodOnBefore(final Object[] argumentArray,
                                         final String namespace,
                                         final int listenerId,
@@ -181,6 +216,15 @@ public class Spy {
         }
     }
 
+    /**
+     * 执行方法体返回之前被调用
+     *
+     * @param object
+     * @param namespace
+     * @param listenerId
+     * @return
+     * @throws Throwable
+     */
     public static Ret spyMethodOnReturn(final Object object,
                                         final String namespace,
                                         final int listenerId) throws Throwable {
@@ -203,6 +247,15 @@ public class Spy {
         }
     }
 
+    /**
+     * 执行方法体抛出异常之前被调用
+     *
+     * @param throwable
+     * @param namespace
+     * @param listenerId
+     * @return
+     * @throws Throwable
+     */
     public static Ret spyMethodOnThrows(final Throwable throwable,
                                         final String namespace,
                                         final int listenerId) throws Throwable {
@@ -225,6 +278,12 @@ public class Spy {
         }
     }
 
+    /**
+     * 处理异常
+     *
+     * @param cause
+     * @throws Throwable
+     */
     private static void handleException(Throwable cause) throws Throwable {
         if (isSpyThrowException) {
             throw cause;

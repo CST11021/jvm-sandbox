@@ -11,10 +11,11 @@ import java.util.LinkedHashSet;
  */
 public class MatchingResult {
 
+    /** 匹配的行为结构：类的构造方法、普通方法、静态方法，统一称呼为类的行为结构 */
     private final LinkedHashSet<BehaviorStructure> behaviorStructures = new LinkedHashSet<BehaviorStructure>();
 
     /**
-     * 是否匹配成功
+     * 是否匹配成功：有匹配的行为结构，说明匹配成功了
      *
      * @return TRUE:匹配成功;FALSE:匹配失败;
      */

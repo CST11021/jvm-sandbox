@@ -236,13 +236,11 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
     private final ClassLoader loader;
     private final Access access;
 
-    ClassStructureImplByAsm(final InputStream classInputStream,
-                            final ClassLoader loader) throws IOException {
+    ClassStructureImplByAsm(final InputStream classInputStream, final ClassLoader loader) throws IOException {
         this(IOUtils.toByteArray(classInputStream), loader);
     }
 
-    ClassStructureImplByAsm(final byte[] classByteArray,
-                            final ClassLoader loader) {
+    ClassStructureImplByAsm(final byte[] classByteArray, final ClassLoader loader) {
         this.classReader = new ClassReader(classByteArray);
         this.loader = loader;
         this.access = fixAccess();
@@ -285,8 +283,7 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
         return internalClassName + ".class";
     }
 
-    private final static Cache<Pair, ClassStructure> classStructureCache
-            = CacheBuilder.newBuilder().maximumSize(1024).build();
+    private final static Cache<Pair, ClassStructure> classStructureCache = CacheBuilder.newBuilder().maximumSize(1024).build();
 
 //    private final static GaLRUCache<Pair, ClassStructure> classStructureCache
 //            = new GaLRUCache<Pair, ClassStructure>(1024);
@@ -426,8 +423,7 @@ public class ClassStructureImplByAsm extends FamilyClassStructure {
     }
 
 
-    private final LazyGet<List<BehaviorStructure>> behaviorStructuresLazyGet
-            = new LazyGet<List<BehaviorStructure>>() {
+    private final LazyGet<List<BehaviorStructure>> behaviorStructuresLazyGet = new LazyGet<List<BehaviorStructure>>() {
         @Override
         protected List<BehaviorStructure> initialValue() {
             final List<BehaviorStructure> behaviorStructures = new ArrayList<BehaviorStructure>();

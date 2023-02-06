@@ -57,9 +57,7 @@ public class EventListenerHandler implements SpyHandler {
      * @param listener   事件监听器
      * @param eventTypes 监听事件集合
      */
-    public void active(final int listenerId,
-                       final EventListener listener,
-                       final Event.Type[] eventTypes) {
+    public void active(final int listenerId, final EventListener listener, final Event.Type[] eventTypes) {
         mappingOfEventProcessor.put(listenerId, new EventProcessor(listenerId, listener, eventTypes));
         logger.info("activated listener[id={};target={};] event={}",
                 listenerId,

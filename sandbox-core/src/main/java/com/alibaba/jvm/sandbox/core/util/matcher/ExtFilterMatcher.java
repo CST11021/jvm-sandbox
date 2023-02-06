@@ -30,11 +30,79 @@ public class ExtFilterMatcher implements Matcher {
         this.extFilter = extFilter;
     }
 
-    // 获取需要匹配的类结构
-    // 如果要匹配子类就需要将这个类的所有家族成员找出
+    @Override
+    public MatchingResult matching(final ClassStructure classStructure) {
+
+        try {
+            return _matching(classStructure);
+        } catch (NoClassDefFoundError error) {
+
+            // 根据 #203 ClassStructureImplByJDK会存在类加载异步的问题
+            // 所以这里对JDK实现的ClassStructure抛出NoClassDefFoundError的时候做一个兼容
+            // 转换为ASM实现然后进行match
+            if (classStructure instanceof ClassStructureImplByJDK
+                    && classStructure.getClassLoader() != null) {
+                final String javaClassResourceName = toInternalClassName(classStructure.getJavaClassName()).concat(".class");
+                InputStream is = null;
+                try {
+                    is = classStructure.getClassLoader().getResourceAsStream(javaClassResourceName);
+                    _matching(ClassStructureFactory.createClassStructure(is, classStructure.getClassLoader()));
+                } finally {
+                    IOUtils.closeQuietly(is);
+                }
+            }
+
+            // 其他情况就直接抛出error
+            throw error;
+        }
+
+    }
+
+    /**
+     * 获取类匹配的行为结果
+     *
+     * @param classStructure
+     * @return 返回一个
+     */
+    private MatchingResult _matching(final ClassStructure classStructure) {
+        final MatchingResult result = new MatchingResult();
+        // 如果不开启加载Bootstrap的类，遇到就过滤掉
+        if (!extFilter.isIncludeBootstrap() && classStructure.getClassLoader() == null) {
+            return result;
+        }
+
+        // 匹配ClassStructure
+        if (!matchingClassStructure(classStructure)) {
+            return result;
+        }
+
+        // 匹配BehaviorStructure
+        for (final BehaviorStructure behaviorStructure : classStructure.getBehaviorStructures()) {
+            if (extFilter.doMethodFilter(
+                    toFilterAccess(behaviorStructure.getAccess()),
+                    behaviorStructure.getName(),
+                    toJavaClassNameArray(behaviorStructure.getParameterTypeClassStructures()),
+                    toJavaClassNameArray(behaviorStructure.getExceptionTypeClassStructures()),
+                    toJavaClassNameArray(behaviorStructure.getAnnotationTypeClassStructures())
+            )) {
+                result.getBehaviorStructures().add(behaviorStructure);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 获取需要匹配的类结构
+     * 如果要匹配子类就需要将这个类的所有家族成员找出
+     *
+     * @param classStructure
+     * @return
+     */
     private Collection<ClassStructure> getWaitingMatchClassStructures(final ClassStructure classStructure) {
         final Collection<ClassStructure> waitingMatchClassStructures = new ArrayList<ClassStructure>();
         waitingMatchClassStructures.add(classStructure);
+
+        // 如果要匹配子类就需要将这个类的所有家族成员找出
         if (extFilter.isIncludeSubClasses()) {
             waitingMatchClassStructures.addAll(classStructure.getFamilyTypeClassStructures());
         }
@@ -70,63 +138,6 @@ public class ExtFilterMatcher implements Matcher {
         }
         return false;
     }
-
-    @Override
-    public MatchingResult matching(final ClassStructure classStructure) {
-
-        try {
-            return _matching(classStructure);
-        } catch (NoClassDefFoundError error) {
-
-            // 根据 #203 ClassStructureImplByJDK会存在类加载异步的问题
-            // 所以这里对JDK实现的ClassStructure抛出NoClassDefFoundError的时候做一个兼容
-            // 转换为ASM实现然后进行match
-            if (classStructure instanceof ClassStructureImplByJDK
-                    && classStructure.getClassLoader() != null) {
-                final String javaClassResourceName = toInternalClassName(classStructure.getJavaClassName()).concat(".class");
-                InputStream is = null;
-                try {
-                    is = classStructure.getClassLoader().getResourceAsStream(javaClassResourceName);
-                    _matching(ClassStructureFactory.createClassStructure(is, classStructure.getClassLoader()));
-                } finally {
-                    IOUtils.closeQuietly(is);
-                }
-            }
-
-            // 其他情况就直接抛出error
-            throw error;
-        }
-
-    }
-
-    private MatchingResult _matching(final ClassStructure classStructure) {
-        final MatchingResult result = new MatchingResult();
-        // 如果不开启加载Bootstrap的类，遇到就过滤掉
-        if (!extFilter.isIncludeBootstrap()
-                && classStructure.getClassLoader() == null) {
-            return result;
-        }
-
-        // 匹配ClassStructure
-        if (!matchingClassStructure(classStructure)) {
-            return result;
-        }
-
-        // 匹配BehaviorStructure
-        for (final BehaviorStructure behaviorStructure : classStructure.getBehaviorStructures()) {
-            if (extFilter.doMethodFilter(
-                    toFilterAccess(behaviorStructure.getAccess()),
-                    behaviorStructure.getName(),
-                    toJavaClassNameArray(behaviorStructure.getParameterTypeClassStructures()),
-                    toJavaClassNameArray(behaviorStructure.getExceptionTypeClassStructures()),
-                    toJavaClassNameArray(behaviorStructure.getAnnotationTypeClassStructures())
-            )) {
-                result.getBehaviorStructures().add(behaviorStructure);
-            }
-        }
-        return result;
-    }
-
 
     /**
      * 转换为{@link AccessFlags}的Access体系

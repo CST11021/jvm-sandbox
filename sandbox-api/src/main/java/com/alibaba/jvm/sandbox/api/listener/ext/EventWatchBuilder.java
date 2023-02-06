@@ -8,6 +8,7 @@ import com.alibaba.jvm.sandbox.api.listener.EventListener;
 import com.alibaba.jvm.sandbox.api.resource.ModuleEventWatcher;
 import com.alibaba.jvm.sandbox.api.resource.ModuleEventWatcher.Progress;
 import com.alibaba.jvm.sandbox.api.util.GaArrayUtils;
+import com.alibaba.jvm.sandbox.api.util.GaCollectionUtils;
 import com.alibaba.jvm.sandbox.api.util.GaStringUtils;
 
 import java.util.ArrayList;
@@ -290,145 +291,6 @@ public class EventWatchBuilder {
 
     }
 
-
-    // -------------------------- 这里开始实现 --------------------------
-
-    /**
-     * 模版匹配模式
-     *
-     * @since {@code sandbox-api:1.1.2}
-     */
-    public enum PatternType {
-
-        /**
-         * 通配符表达式
-         */
-        WILDCARD,
-
-        /**
-         * 正则表达式
-         */
-        REGEX
-    }
-
-    private final ModuleEventWatcher moduleEventWatcher;
-    private final PatternType patternType;
-    private List<BuildingForClass> bfClasses = new ArrayList<BuildingForClass>();
-
-    /**
-     * 构造事件观察者构造器(通配符匹配模式)
-     *
-     * @param moduleEventWatcher 模块事件观察者
-     */
-    public EventWatchBuilder(final ModuleEventWatcher moduleEventWatcher) {
-        this(moduleEventWatcher, WILDCARD);
-    }
-
-    /**
-     * 构造事件观察者构造器
-     *
-     * @param moduleEventWatcher 模块事件观察者
-     * @param patternType        模版匹配模式
-     * @since {@code sandbox-api:1.1.2}
-     */
-    public EventWatchBuilder(final ModuleEventWatcher moduleEventWatcher, final PatternType patternType) {
-        this.moduleEventWatcher = moduleEventWatcher;
-        this.patternType = patternType;
-    }
-
-    /**
-     * 模式匹配
-     *
-     * @param string      目标字符串
-     * @param pattern     模式字符串
-     * @param patternType 匹配模式
-     * @return TRUE:匹配成功 / FALSE:匹配失败
-     */
-    private static boolean patternMatching(final String string, final String pattern, final PatternType patternType) {
-        switch (patternType) {
-            case WILDCARD:
-                return GaStringUtils.matching(string, pattern);
-            case REGEX:
-                return string.matches(pattern);
-            default:
-                return false;
-        }
-    }
-
-    /**
-     * 将字符串数组转换为正则表达式字符串数组
-     *
-     * @param stringArray 目标字符串数组
-     * @return 正则表达式字符串数组
-     */
-    private static String[] toRegexQuoteArray(final String[] stringArray) {
-        if (null == stringArray) {
-            return null;
-        }
-        final String[] regexQuoteArray = new String[stringArray.length];
-        for (int index = 0; index < stringArray.length; index++) {
-            regexQuoteArray[index] = quote(stringArray[index]);
-        }
-        return regexQuoteArray;
-    }
-
-
-    /**
-     * 匹配任意类
-     * <p>
-     * 等同于{@code onClass("*")}
-     * </p>
-     *
-     * @return IBuildingForClass
-     */
-    public IBuildingForClass onAnyClass() {
-        switch (patternType) {
-            case REGEX:
-                return onClass(".*");
-            case WILDCARD:
-            default:
-                return onClass("*");
-        }
-    }
-
-    /**
-     * 匹配指定类
-     * <p>
-     * 等同于{@code onClass(clazz.getCanonicalName())}
-     * </p>
-     *
-     * @param clazz 指定Class，这里的Class可以忽略ClassLoader的差异。
-     *              这里主要取Class的类名
-     * @return IBuildingForClass
-     */
-    public IBuildingForClass onClass(final Class<?> clazz) {
-        switch (patternType) {
-            case REGEX: {
-                return onClass(quote(getJavaClassName(clazz)));
-            }
-            case WILDCARD:
-            default:
-                return onClass(getJavaClassName(clazz));
-        }
-
-    }
-
-    /**
-     * 模版匹配类名称(包含包名)
-     * <p>
-     * 例子：
-     * <ul>
-     * <li>"com.alibaba.*"</li>
-     * <li>"java.util.ArrayList"</li>
-     * </ul>
-     *
-     * @param pattern 类名匹配模版
-     * @return IBuildingForClass
-     */
-    public IBuildingForClass onClass(final String pattern) {
-        return add(bfClasses, new BuildingForClass(pattern));
-    }
-
     /**
      * 类匹配器实现
      */
@@ -687,6 +549,12 @@ public class EventWatchBuilder {
             return this;
         }
 
+        /**
+         * 这里就是将增强逻辑植入目标类的重要入口
+         *
+         * @param adviceListener 通知监听器
+         * @return
+         */
         @Override
         public EventWatcher onWatch(AdviceListener adviceListener) {
             eventTypeSet.add(BEFORE);
@@ -700,12 +568,193 @@ public class EventWatchBuilder {
                     eventTypeSet.toArray(EMPTY)
             );
         }
+        private EventWatcher build(final EventListener listener, final Progress progress, final Event.Type... eventTypes) {
+
+            final int watchId = moduleEventWatcher.watch(
+                    toEventWatchCondition(),
+                    listener,
+                    progress,
+                    eventTypes
+            );
+
+            return new EventWatcher() {
+
+                final List<Progress> progresses = new ArrayList<Progress>();
+
+                @Override
+                public int getWatchId() {
+                    return watchId;
+                }
+
+                @Override
+                public IBuildingForUnWatching withProgress(Progress progress) {
+                    if (null != progress) {
+                        progresses.add(progress);
+                    }
+                    return this;
+                }
+
+                @Override
+                public void onUnWatched() {
+                    moduleEventWatcher.delete(watchId, toProgressGroup(progresses));
+                }
+
+            };
+        }
 
         @Override
         public EventWatcher onWatch(EventListener eventListener, Event.Type... eventTypeArray) {
             return build(eventListener, toProgressGroup(progresses), eventTypeArray);
         }
 
+    }
+
+
+    // -------------------------- 这里开始实现 --------------------------
+
+    /**
+     * 模版匹配模式
+     *
+     * @since {@code sandbox-api:1.1.2}
+     */
+    public enum PatternType {
+
+        /**
+         * 通配符表达式
+         */
+        WILDCARD,
+
+        /**
+         * 正则表达式
+         */
+        REGEX
+    }
+
+    private final ModuleEventWatcher moduleEventWatcher;
+    /** 匹配模式 */
+    private final PatternType patternType;
+    /** 用于匹配类的表达式集合 */
+    private List<BuildingForClass> bfClasses = new ArrayList<BuildingForClass>();
+
+    /**
+     * 构造事件观察者构造器(通配符匹配模式)
+     *
+     * @param moduleEventWatcher 模块事件观察者
+     */
+    public EventWatchBuilder(final ModuleEventWatcher moduleEventWatcher) {
+        this(moduleEventWatcher, WILDCARD);
+    }
+
+    /**
+     * 构造事件观察者构造器
+     *
+     * @param moduleEventWatcher 模块事件观察者
+     * @param patternType        模版匹配模式
+     * @since {@code sandbox-api:1.1.2}
+     */
+    public EventWatchBuilder(final ModuleEventWatcher moduleEventWatcher, final PatternType patternType) {
+        this.moduleEventWatcher = moduleEventWatcher;
+        this.patternType = patternType;
+    }
+
+
+    // ################## 匹配类 ##################
+
+    /**
+     * 匹配任意类
+     * <p>
+     * 等同于{@code onClass("*")}
+     * </p>
+     *
+     * @return IBuildingForClass
+     */
+    public IBuildingForClass onAnyClass() {
+        switch (patternType) {
+            case REGEX:
+                return onClass(".*");
+            case WILDCARD:
+            default:
+                return onClass("*");
+        }
+    }
+
+    /**
+     * 匹配指定类
+     * <p>
+     * 等同于{@code onClass(clazz.getCanonicalName())}
+     * </p>
+     *
+     * @param clazz 指定Class，这里的Class可以忽略ClassLoader的差异。
+     *              这里主要取Class的类名
+     * @return IBuildingForClass
+     */
+    public IBuildingForClass onClass(final Class<?> clazz) {
+        switch (patternType) {
+            case REGEX: {
+                return onClass(quote(getJavaClassName(clazz)));
+            }
+            case WILDCARD:
+            default:
+                return onClass(getJavaClassName(clazz));
+        }
+
+    }
+
+    /**
+     * 模版匹配类名称(包含包名)
+     * <p>
+     * 例子：
+     * <ul>
+     * <li>"com.alibaba.*"</li>
+     * <li>"java.util.ArrayList"</li>
+     * </ul>
+     *
+     * @param pattern 类名匹配模版
+     * @return IBuildingForClass
+     */
+    public IBuildingForClass onClass(final String pattern) {
+        return GaCollectionUtils.add(bfClasses, new BuildingForClass(pattern));
+    }
+
+
+
+
+
+
+    /**
+     * 模式匹配
+     *
+     * @param string      目标字符串
+     * @param pattern     模式字符串
+     * @param patternType 匹配模式
+     * @return TRUE:匹配成功 / FALSE:匹配失败
+     */
+    private static boolean patternMatching(final String string, final String pattern, final PatternType patternType) {
+        switch (patternType) {
+            case WILDCARD:
+                return GaStringUtils.matching(string, pattern);
+            case REGEX:
+                return string.matches(pattern);
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * 将字符串数组转换为正则表达式字符串数组
+     *
+     * @param stringArray 目标字符串数组
+     * @return 正则表达式字符串数组
+     */
+    private static String[] toRegexQuoteArray(final String[] stringArray) {
+        if (null == stringArray) {
+            return null;
+        }
+        final String[] regexQuoteArray = new String[stringArray.length];
+        for (int index = 0; index < stringArray.length; index++) {
+            regexQuoteArray[index] = quote(stringArray[index]);
+        }
+        return regexQuoteArray;
     }
 
     private EventWatchCondition toEventWatchCondition() {

@@ -52,8 +52,7 @@ public class ClassStructureFactory {
      * @param loader         即将装载Class的ClassLoader
      * @return ASM实现的类结构
      */
-    public static ClassStructure createClassStructure(final byte[] classByteArray,
-                                                      final ClassLoader loader) {
+    public static ClassStructure createClassStructure(final byte[] classByteArray, final ClassLoader loader) {
         return new ClassStructureImplByAsm(classByteArray, loader);
     }
 
