@@ -11,7 +11,7 @@ import java.util.Set;
 public interface Enhancer {
 
     /**
-     * 转换为增强后的字节码数组
+     * 转换为植入增强埋点后的类字节数组
      *
      * @param loader           目标类加载器
      * @param srcByteCodeArray 源字节码数组

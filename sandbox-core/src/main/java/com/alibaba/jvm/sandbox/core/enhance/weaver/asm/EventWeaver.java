@@ -68,16 +68,14 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
     private final Set<String> signCodes;
     private final Event.Type[] eventTypeArray;
 
-    // 是否支持LINE_EVENT
-    // LINE_EVENT需要对Class做特殊的增强，所以需要在这里做特殊的判断
+    /** 是否支持LINE_EVENT：LINE_EVENT需要对Class做特殊的增强，所以需要在这里做特殊的判断 */
     private final boolean isLineEnable;
-
-    // 是否支持CALL_BEFORE/CALL_RETURN/CALL_THROWS事件
-    // CALL系列事件需要对Class做特殊的增强，所以需要在这里做特殊的判断
+    /** 是否支持CALL_BEFORE/CALL_RETURN/CALL_THROWS事件: CALL系列事件需要对Class做特殊的增强，所以需要在这里做特殊的判断 */
+    private final boolean isCallEnable;
     private final boolean hasCallThrows;
     private final boolean hasCallBefore;
     private final boolean hasCallReturn;
-    private final boolean isCallEnable;
+
 
     /**
      * 通过 EventEnhancer#toByteCodeArray() 方法将事件编织器植入目标，这样类行为方法调用的时候，就可以通过this.visitMethod()进行回调了
