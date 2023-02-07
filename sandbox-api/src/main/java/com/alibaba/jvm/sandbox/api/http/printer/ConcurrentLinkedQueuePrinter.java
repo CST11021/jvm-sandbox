@@ -27,7 +27,7 @@ public class ConcurrentLinkedQueuePrinter implements Printer {
     /** 队列的容量大小 */
     private final int capacity;
 
-    // 是否被打断
+    /** 是否被打断 */
     private final AtomicBoolean isBrokenRef = new AtomicBoolean(false);
 
     private final long delayStepTimeMs;
@@ -42,8 +42,7 @@ public class ConcurrentLinkedQueuePrinter implements Printer {
      *                        Printer会每隔这个时间间隔检查是否有输出,如果没有任何输出则会延时累加,
      *                        整体累加延时不会超过{@link #delayMaxTimeMs}
      * @param delayMaxTimeMs  最大轮空延时
-     * @param capacity        队列最大容量
-     *                        超过最大容量的输入将会被主动丢弃
+     * @param capacity        队列最大容量, 超过最大容量的输入将会被主动丢弃
      */
     public ConcurrentLinkedQueuePrinter(final PrintWriter writer,
                                         final long delayStepTimeMs,
@@ -82,6 +81,7 @@ public class ConcurrentLinkedQueuePrinter implements Printer {
 
     @Override
     public Printer println(String string) {
+        // 将打印的内容放到队列
         if (!isOverCapacity()) {
             writeQueue.offer(string + "\n");
         }

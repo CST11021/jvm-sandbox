@@ -74,8 +74,7 @@ public class BeforeEvent extends InvokeEvent {
      * @return this
      * @since {@code sandbox-api:1.0.10}
      */
-    public BeforeEvent changeParameter(final int index,
-                                       final Object changeValue) {
+    public BeforeEvent changeParameter(final int index, final Object changeValue) {
         argumentArray[index] = changeValue;
         return this;
     }

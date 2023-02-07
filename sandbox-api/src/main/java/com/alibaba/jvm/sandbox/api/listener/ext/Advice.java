@@ -66,8 +66,7 @@ public class Advice implements Attachment {
      * @param parent 集联上一个调用的通知
      * @return this
      */
-    Advice applyBefore(final Advice top,
-                       final Advice parent) {
+    Advice applyBefore(final Advice top, final Advice parent) {
         this.top = top;
         this.parent = parent;
         return this;
@@ -112,8 +111,7 @@ public class Advice implements Attachment {
      * @param changeValue 改变的值
      * @return this
      */
-    public Advice changeParameter(final int index,
-                                  final Object changeValue) {
+    public Advice changeParameter(final int index, final Object changeValue) {
         parameterArray[index] = changeValue;
         return this;
     }
@@ -255,8 +253,7 @@ public class Advice implements Attachment {
      * @param attachment 附件
      * @param mark       标记
      */
-    public void attach(final Object attachment,
-                       final String mark) {
+    public void attach(final Object attachment, final String mark) {
         attach(attachment);
         mark(mark);
     }

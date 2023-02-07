@@ -34,8 +34,6 @@ public class AgentLauncher {
     /** 用户模块目录, 默认为: ~/sandbox/sandbox-module */
     private static final String SANDBOX_USER_MODULE_PATH = DEFAULT_SANDBOX_HOME + File.separator + "sandbox-module";
 
-
-
     /** 启动默认 */
     private static String LAUNCH_MODE;
     /** 启动模式: agent方式加载 */
@@ -43,20 +41,20 @@ public class AgentLauncher {
     /** 启动模式: attach方式加载 */
     private static final String LAUNCH_MODE_ATTACH = "attach";
 
-
-    // agentmain上来的结果输出到文件${HOME}/.sandbox.token
+    /** agentmain上来的结果输出到文件${HOME}/.sandbox.token */
     private static final String RESULT_FILE_PATH = System.getProperties().getProperty("user.home") + File.separator + ".sandbox.token";
 
-    // 全局持有ClassLoader用于隔离sandbox实现, Map<NAMESPACE, SandboxClassLoader>
+    /** 全局持有ClassLoader用于隔离sandbox实现, Map<NAMESPACE, SandboxClassLoader> */
     private static volatile Map<String, SandboxClassLoader> sandboxClassLoaderMap = new ConcurrentHashMap<String, SandboxClassLoader>();
 
     /** 内核启动配置 */
     private static final String CLASS_OF_CORE_CONFIGURE = "com.alibaba.jvm.sandbox.core.CoreConfigure";
-    // private static final String CLASS_OF_JETTY_CORE_SERVER = "com.alibaba.jvm.sandbox.core.server.jetty.JettyCoreServer";
     private static final String CLASS_OF_PROXY_CORE_SERVER = "com.alibaba.jvm.sandbox.core.server.ProxyCoreServer";
 
+
+
     /**
-     * 启动加载
+     * JVM启动时加载入口
      *
      * @param featureString 启动参数, 例如: server.port=8820;server.ip=0.0.0.0
      *                      [namespace,prop]
@@ -68,7 +66,7 @@ public class AgentLauncher {
     }
 
     /**
-     * 动态加载
+     * JVM启动后的动态加载入口
      *
      * @param featureString 启动参数
      *                      [namespace,token,ip,port,prop]
@@ -83,6 +81,9 @@ public class AgentLauncher {
                 install(featureMap, inst)
         );
     }
+
+
+
 
     private static String getSandboxCfgPath(String sandboxHome) {
         return sandboxHome + File.separatorChar + "cfg";
@@ -314,6 +315,8 @@ public class AgentLauncher {
 
     private static final String KEY_PROPERTIES_FILE_PATH = "prop";
 
+    private static String OS = System.getProperty("os.name").toLowerCase();
+
     private static boolean isNotBlankString(final String string) {
         return null != string
                 && string.length() > 0
@@ -373,8 +376,6 @@ public class AgentLauncher {
                 : defaultValue;
     }
 
-    private static String OS = System.getProperty("os.name").toLowerCase();
-
     private static boolean isWindows() {
         return OS.contains("win");
     }
@@ -406,7 +407,12 @@ public class AgentLauncher {
         return getDefault(featureMap, KEY_NAMESPACE, DEFAULT_NAMESPACE);
     }
 
-    // 获取TOKEN
+    /**
+     * 获取TOKEN
+     *
+     * @param featureMap
+     * @return
+     */
     private static String getToken(final Map<String, String> featureMap) {
         return getDefault(featureMap, KEY_TOKEN, DEFAULT_TOKEN);
     }
@@ -427,7 +433,14 @@ public class AgentLauncher {
         );
     }
 
-    // 如果featureMap中有对应的key值，则将featureMap中的[K,V]对合并到featureSB中
+    /**
+     * 如果featureMap中有对应的key值，则将featureMap中的[K,V]对合并到featureSB中
+     *
+     * @param featureSB
+     * @param featureMap
+     * @param key
+     * @param defaultValue
+     */
     private static void appendFromFeatureMap(final StringBuilder featureSB,
                                              final Map<String, String> featureMap,
                                              final String key,

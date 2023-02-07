@@ -172,14 +172,14 @@ public class Spy {
     /**
      * 执行方法体之前被调用
      *
-     * @param argumentArray
-     * @param namespace
+     * @param argumentArray                 调用目标方法的入参
+     * @param namespace                     命名空间
      * @param listenerId                    要触发的监听ID
-     * @param targetClassLoaderObjectID
-     * @param javaClassName
-     * @param javaMethodName
-     * @param javaMethodDesc
-     * @param target
+     * @param targetClassLoaderObjectID     目标类加载器的对象ID（JVM唯一）
+     * @param javaClassName                 目标类的类名
+     * @param javaMethodName                目标类的方法名
+     * @param javaMethodDesc                触发的方法签名
+     * @param target                        目标类对象
      * @return
      * @throws Throwable
      */
@@ -219,9 +219,9 @@ public class Spy {
     /**
      * 执行方法体返回之前被调用
      *
-     * @param object
-     * @param namespace
-     * @param listenerId
+     * @param object        方法调用的返回值
+     * @param namespace     命名空间
+     * @param listenerId    事件监听ID
      * @return
      * @throws Throwable
      */

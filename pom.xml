@@ -162,12 +162,7 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>4.9</version>
-                <scope>test</scope>
-            </dependency>
+            <!-- 内部模块 -->
             <dependency>
                 <groupId>com.alibaba.jvm.sandbox</groupId>
                 <artifactId>sandbox-api</artifactId>
@@ -207,11 +202,20 @@
                 <version>1.2</version>
             </dependency>
 
+            <!-- 引用该包，执行'mvn clean package'命令后, 可以在target/classes/META-INF/services/目录下自动生成SIP文件 -->
             <dependency>
                 <groupId>org.kohsuke.metainf-services</groupId>
                 <artifactId>metainf-services</artifactId>
                 <version>1.7</version>
                 <scope>compile</scope>
+            </dependency>
+
+            <!-- 测试 -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.9</version>
+                <scope>test</scope>
             </dependency>
 
         </dependencies>

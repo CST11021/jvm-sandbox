@@ -42,9 +42,7 @@ public interface ExtFilter extends Filter {
          * @param isIncludeBootstrap  是否搜索BootstrapClassLoader所加载的类
          * @return 增强过滤器
          */
-        public static ExtFilter make(final Filter filter,
-                                     final boolean isIncludeSubClasses,
-                                     final boolean isIncludeBootstrap) {
+        public static ExtFilter make(final Filter filter, final boolean isIncludeSubClasses, final boolean isIncludeBootstrap) {
             return new ExtFilter() {
 
                 @Override

@@ -76,13 +76,15 @@ public class WebSocketAcceptorServlet extends WebSocketServlet {
         }
     }
 
-    /*
+    /**
      * 从pathInfo中提取module's uniqueId
+     *
+     * @param pathInfo
+     * @return
      */
     private String parseUniqueId(final String pathInfo) {
         final String[] pathSegmentArray = StringUtils.split(pathInfo, "/");
-        if (null != pathSegmentArray
-                && pathSegmentArray.length >= 1) {
+        if (null != pathSegmentArray && pathSegmentArray.length >= 1) {
             return pathSegmentArray[0];
         }
         return null;

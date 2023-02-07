@@ -12,12 +12,14 @@ import java.util.jar.JarFile;
 
 /**
  * 加载Sandbox用的ClassLoader
+ *
  * Created by luanjia@taobao.com on 2016/10/26.
  */
 class SandboxClassLoader extends URLClassLoader {
 
-    private final String toString;
+    /** sandbox-core.jar的路径 */
     private final String path;
+    private final String toString;
 
     SandboxClassLoader(final String namespace, final String sandboxCoreJarFilePath) throws MalformedURLException {
         super(new URL[]{new URL("file:" + sandboxCoreJarFilePath)});

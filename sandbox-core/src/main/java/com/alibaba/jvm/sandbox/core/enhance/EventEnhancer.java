@@ -36,7 +36,7 @@ public class EventEnhancer implements Enhancer {
      *
      * @param targetClassLoader 目标类加载器
      * @param byteCodeArray     源字节码数组
-     * @param signCodes         需要被增强的行为签名
+     * @param signCodes         需要被增强的行为签名：这些签名就是我们要关注的切点
      * @param namespace         命名空间
      * @param listenerId        需要埋入的监听器ID
      * @param eventTypeArray    需要配埋入的事件类型

@@ -18,9 +18,7 @@ public interface AsmMethods {
         private InnerHelper() {
         }
 
-        static Method getAsmMethod(final Class<?> clazz,
-                                   final String methodName,
-                                   final Class<?>... parameterClassArray) {
+        static Method getAsmMethod(final Class<?> clazz, final String methodName, final Class<?>... parameterClassArray) {
             return Method.getMethod(unCaughtGetClassDeclaredJavaMethod(clazz, methodName, parameterClassArray));
         }
     }
@@ -29,17 +27,18 @@ public interface AsmMethods {
      * asm method of {@link Spy#spyMethodOnBefore(Object[], String, int, int, String, String, String, Object)}
      */
     Method ASM_METHOD_Spy$spyMethodOnBefore = getAsmMethod(
-            Spy.class,
-            "spyMethodOnBefore",
+            Spy.class, "spyMethodOnBefore",
             Object[].class, String.class, int.class, int.class, String.class, String.class, String.class, Object.class
     );
 
     /**
      * asm method of {@link Spy#spyMethodOnReturn(Object, String, int)}
+     *      * @param object        方法调用的返回值
+     *      * @param namespace     命名空间
+     *      * @param listenerId    事件监听ID
      */
     Method ASM_METHOD_Spy$spyMethodOnReturn = getAsmMethod(
-            Spy.class,
-            "spyMethodOnReturn",
+            Spy.class, "spyMethodOnReturn",
             Object.class, String.class, int.class
     );
 
@@ -47,8 +46,7 @@ public interface AsmMethods {
      * asm method of {@link Spy#spyMethodOnThrows(Throwable, String, int)}
      */
     Method ASM_METHOD_Spy$spyMethodOnThrows = getAsmMethod(
-            Spy.class,
-            "spyMethodOnThrows",
+            Spy.class, "spyMethodOnThrows",
             Throwable.class, String.class, int.class
     );
 
@@ -57,8 +55,7 @@ public interface AsmMethods {
      * asm method of {@link Spy#spyMethodOnLine(int, String, int)}
      */
     Method ASM_METHOD_Spy$spyMethodOnLine = getAsmMethod(
-            Spy.class,
-            "spyMethodOnLine",
+            Spy.class, "spyMethodOnLine",
             int.class, String.class, int.class
     );
 
@@ -66,8 +63,7 @@ public interface AsmMethods {
      * asm method of {@link Spy#spyMethodOnCallBefore(int, String, String, String, String, int)}
      */
     Method ASM_METHOD_Spy$spyMethodOnCallBefore = getAsmMethod(
-            Spy.class,
-            "spyMethodOnCallBefore",
+            Spy.class, "spyMethodOnCallBefore",
             int.class, String.class, String.class, String.class, String.class, int.class
     );
 
@@ -75,8 +71,7 @@ public interface AsmMethods {
      * asm method of {@link Spy#spyMethodOnCallReturn(String, int)}
      */
     Method ASM_METHOD_Spy$spyMethodOnCallReturn = getAsmMethod(
-            Spy.class,
-            "spyMethodOnCallReturn",
+            Spy.class, "spyMethodOnCallReturn",
             String.class, int.class
     );
 
@@ -84,8 +79,7 @@ public interface AsmMethods {
      * asm method of {@link Spy#spyMethodOnCallThrows(String, String, int)}
      */
     Method ASM_METHOD_Spy$spyMethodOnCallThrows = getAsmMethod(
-            Spy.class,
-            "spyMethodOnCallThrows",
+            Spy.class, "spyMethodOnCallThrows",
             String.class, String.class, int.class
     );
 
@@ -99,16 +93,14 @@ public interface AsmMethods {
 //    );
 
     Method ASM_METHOD_Class$getName = getAsmMethod(
-            Class.class,
-            "getName"
+            Class.class, "getName"
     );
 
     /**
      * asm method of {@link Class#getClass()}
      */
     Method ASM_METHOD_Object$getClass = getAsmMethod(
-            Object.class,
-            "getClass"
+            Object.class, "getClass"
     );
 
 //    /**

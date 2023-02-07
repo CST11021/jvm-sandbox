@@ -7,10 +7,10 @@ package com.alibaba.jvm.sandbox.api.filter;
  */
 public class NameRegexFilter implements Filter {
 
-    // 类名正则表达式
+    /** 类名正则表达式 */
     private final String javaNameRegex;
 
-    // 方法名正则表达式
+    /** 方法名正则表达式 */
     private final String javaMethodRegex;
 
     /**

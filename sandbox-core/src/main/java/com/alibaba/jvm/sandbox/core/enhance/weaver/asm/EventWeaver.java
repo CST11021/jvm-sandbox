@@ -80,14 +80,14 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
     /**
      * 通过 EventEnhancer#toByteCodeArray() 方法将事件编织器植入目标，这样类行为方法调用的时候，就可以通过this.visitMethod()进行回调了
      *
-     * @param api
-     * @param cv
-     * @param namespace
-     * @param listenerId
-     * @param targetClassLoaderObjectID
-     * @param targetClassInternalName
-     * @param signCodes
-     * @param eventTypeArray
+     * @param api                       asm版本ID
+     * @param cv                        类访问器
+     * @param namespace                 埋点字段：命名空间
+     * @param listenerId                埋点字段：监听ID
+     * @param targetClassLoaderObjectID 目标类加载器对象的ID(JVM唯一)
+     * @param targetClassInternalName   目标类的类名
+     * @param signCodes                 需要被增强的行为签名：这些签名就是我们要关注的切点
+     * @param eventTypeArray            监听的事件类型
      */
     public EventWeaver(final int api,
                        final ClassVisitor cv,
@@ -162,6 +162,14 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
 
             /**
              * 触发 {@link Spy#spyMethodOnBefore(Object[], String, int, int, String, String, String, Object)}
+             * param argumentArray                 调用目标方法的入参
+             * param namespace                     命名空间
+             * param listenerId                    要触发的监听ID
+             * param targetClassLoaderObjectID     目标类加载器的对象ID（JVM唯一）
+             * param javaClassName                 目标类的类名
+             * param javaMethodName                目标类的方法名
+             * param javaMethodDesc                触发的方法签名
+             * param target                        目标类对象
              */
             @Override
             protected void onMethodEnter() {
@@ -170,15 +178,24 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
                     @Override
                     public void code() {
                         mark(beginLabel);
+                        // 设置调用目标方法的入参
                         loadArgArray();
                         dup();
+                        // 设置埋点字段：命名空间
                         push(namespace);
+                        // 设置埋点字段：监听器ID
                         push(listenerId);
+                        // 设置埋点字段：目标类加载器的ID
                         loadClassLoader();
+                        // 设置埋点字段：目标类的方法名
                         push(targetJavaClassName);
+                        // 设置埋点字段：目标类的类名
                         push(name);
+                        // 设置埋点字段：目标类的方法签名
                         push(desc);
+                        // 设置埋点字段：目标类实例
                         loadThisOrPushNullIfIsStatic();
+                        // 设置调用间谍类的静态方法
                         invokeStatic(ASM_TYPE_SPY, ASM_METHOD_Spy$spyMethodOnBefore);
                         swap();
                         storeArgArray();
@@ -190,15 +207,24 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
                 });
             }
 
+            /**
+             * 执行方法体返回之前被调用
+             *
+             * @param opcode
+             */
             @Override
             protected void onMethodExit(final int opcode) {
                 if (!isThrow(opcode)) {
                     codeLockForTracing.lock(new CodeLock.Block() {
                         @Override
                         public void code() {
+                            // 设置方法调用的返回值
                             loadReturn(opcode);
+                            // 设置命名空间
                             push(namespace);
+                            // 设置监听器ID
                             push(listenerId);
+                            // 调用间谍类的静态方法
                             invokeStatic(ASM_TYPE_SPY, ASM_METHOD_Spy$spyMethodOnReturn);
                             processControl();
                         }
@@ -237,9 +263,13 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
                     codeLockForTracing.lock(new CodeLock.Block() {
                         @Override
                         public void code() {
+                            // 设置代码的行号
                             push(lineNumber);
+                            // 设置命名空间
                             push(namespace);
+                            // 设置监听器ID
                             push(listenerId);
+                            // 调用间谍类的静态方法
                             invokeStatic(ASM_TYPE_SPY, ASM_METHOD_Spy$spyMethodOnLine);
                         }
                     });
