@@ -73,7 +73,7 @@ public class EventEnhancer implements Enhancer {
     }
 
     /**
-     * 将植入增强后字节码写入className对应的.class文件
+     * 将植入增强后字节码写入className对应的.class文件，这样就可以通过反编译.class查看插装后的代码了
      *
      * 用于代码调试
      * @param className     目标类名称

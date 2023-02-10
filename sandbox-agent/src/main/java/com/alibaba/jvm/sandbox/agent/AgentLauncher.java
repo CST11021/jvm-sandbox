@@ -243,7 +243,10 @@ public class AgentLauncher {
 
         try {
             final String home = getSandboxHome(featureMap);
-            // 将sandbox-spy.jar包注入到BootstrapClassLoader
+            // 将sandbox-spy.jar包注入到BootstrapClassLoader：
+            // 先说一个结论：父类加载器加载的类不能使用子类加载器加载的类
+            // 再说原因：sandbox支持监听jdk自带的类，例如：String等，由于sandbox的原理是通过asm字节码技术将Spy间谍类插装到目标类方法的程序逻辑中，所以就会有目标依赖Spy的情况，将Spy载入BootStrapClassLoader，就可以对jdk和自定义进行插装了
+            // 另外：在 sandbox-core 包被加载后，会触发调用 SpyUtils 的静态方法 init()将 EventListenerHandlers 类的静态方法 onBefore()注册到由 BootstrapClassLoader 加载的 Spy 类的静态内部类 MethodHook 的钩子上。这样一来，等于就通过 Spy 类打通了 AppClassLoader、SandboxClassLoader，以及 ModuleClassLoader 三者之间的“通讯”
             inst.appendToBootstrapClassLoaderSearch(new JarFile(new File(
                     getSandboxSpyJarPath(home)
             )));

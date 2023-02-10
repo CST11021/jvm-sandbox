@@ -61,11 +61,17 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    /** 目标类加载器对象的ID(JVM唯一) */
     private final int targetClassLoaderObjectID;
+    /** 命名空间 */
     private final String namespace;
+    /** 监听器ID */
     private final int listenerId;
+    /** 目标类的类名，例如：java.lang.String */
     private final String targetJavaClassName;
+    /** 需要被增强的行为签名：这些签名就是我们要关注的切点 */
     private final Set<String> signCodes;
+    /** 监听的事件类型 */
     private final Event.Type[] eventTypeArray;
 
     /** 是否支持LINE_EVENT：LINE_EVENT需要对Class做特殊的增强，所以需要在这里做特殊的判断 */
@@ -135,8 +141,8 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
         }
 
         logger.info("rewrite method {} for listener[id={}];event={};", signCode, listenerId, join(eventTypeArray, ","));
-
-        return new ReWriteMethod(api, new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions), access, name, desc) {
+        MethodVisitor methodVisitor = new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
+        return new ReWriteMethod(api, methodVisitor, access, name, desc) {
 
             private final Label beginLabel = new Label();
             private final Label endLabel = new Label();
@@ -144,10 +150,12 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
             private final Label endCatchBlock = new Label();
             private int newlocal = -1;
 
-            // 用来标记一个方法是否已经进入
-            // JVM中的构造函数非常特殊，super();this();是在构造函数方法体执行之外进行，如果在这个之前进行了任何的流程改变操作
-            // 将会被JVM加载类的时候判定校验失败，导致类加载出错
-            // 所以这里需要用一个标记为告知后续的代码编织，绕开super()和this()
+            /**
+             * 用来标记一个方法是否已经进入
+             * JVM中的构造函数非常特殊，super();this();是在构造函数方法体执行之外进行，如果在这个之前进行了任何的流程改变操作
+             * 将会被JVM加载类的时候判定校验失败，导致类加载出错
+             * 所以这里需要用一个标记为告知后续的代码编织，绕开super()和this()
+             */
             private boolean isMethodEnter = false;
 
             /** 代码锁 */
@@ -331,8 +339,7 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
                 final Label tracingEndLabel = new Label();
                 final Label tracingFinallyLabel = new Label();
 
-                // try
-                // {
+
 
                 mark(tracingBeginLabel);
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -351,10 +358,6 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
                 }
                 goTo(tracingFinallyLabel);
 
-                // }
-                // catch
-                // {
-
                 catchException(tracingBeginLabel, tracingEndLabel, ASM_TYPE_THROWABLE);
                 codeLockForTracing.lock(new CodeLock.Block() {
                     @Override
@@ -370,11 +373,7 @@ public class EventWeaver extends ClassVisitor implements Opcodes, AsmTypes, AsmM
 
                 throwException();
 
-                // }
-                // finally
-                // {
                 mark(tracingFinallyLabel);
-                // }
 
             }
 
