@@ -22,7 +22,7 @@ public class CoreConfigure {
 
     /*
                     NAMESPACE : default
-                      VERSION : 1.3.3
+                      VERSION : 1.3.1
                          MODE : ATTACH
                   SERVER_ADDR : 0.0.0.0
                   SERVER_PORT : 12580

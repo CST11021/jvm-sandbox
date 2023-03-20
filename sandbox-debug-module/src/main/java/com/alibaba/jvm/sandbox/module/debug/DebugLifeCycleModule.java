@@ -45,6 +45,9 @@ public class DebugLifeCycleModule implements Module, ModuleLifecycle {
     private ModuleManager moduleManager;
 
     /**
+     * 84154
+     * sh ~/sandbox/bin/sandbox.sh -p 84154 -d 'debug-lifecycle/control?class=testClass&method=testMethod'
+     *
      * 命令：sh ${sandbox_home}/bin/sandbox.sh -p ${PID} -d 'debug-lifecycle/control?class=testClass&method=testMethod'
      * 该命名仅仅只是测试模块的声明周期
      *

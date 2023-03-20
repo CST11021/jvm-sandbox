@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# sandbox's target dir
+# 定义sandbox的 target 目录
 SANDBOX_TARGET_DIR=../target/sandbox
 
 
@@ -13,11 +13,11 @@ exit_on_err()
     exit ${1}
 }
 
-# maven package the sandbox
+# 执行maven打包命令
 mvn clean cobertura:cobertura package -Dmaven.test.skip=false -f ../pom.xml \
     || exit_on_err 1 "package sandbox failed."
 
-# reset the target dir
+# 在/target/sandbox目录下创建：bin、lib、module、cfg、provider、sandbox-module目录
 mkdir -p ${SANDBOX_TARGET_DIR}/bin
 mkdir -p ${SANDBOX_TARGET_DIR}/lib
 mkdir -p ${SANDBOX_TARGET_DIR}/module
@@ -25,7 +25,7 @@ mkdir -p ${SANDBOX_TARGET_DIR}/cfg
 mkdir -p ${SANDBOX_TARGET_DIR}/provider
 mkdir -p ${SANDBOX_TARGET_DIR}/sandbox-module
 
-# copy jar to TARGET_DIR
+# 将jar包copy到target目录
 cp ../sandbox-core/target/sandbox-core-*-jar-with-dependencies.jar ${SANDBOX_TARGET_DIR}/lib/sandbox-core.jar \
     && cp ../sandbox-agent/target/sandbox-agent-*-jar-with-dependencies.jar ${SANDBOX_TARGET_DIR}/lib/sandbox-agent.jar \
     && cp ../sandbox-spy/target/sandbox-spy-*-jar-with-dependencies.jar ${SANDBOX_TARGET_DIR}/lib/sandbox-spy.jar \
@@ -34,7 +34,7 @@ cp ../sandbox-core/target/sandbox-core-*-jar-with-dependencies.jar ${SANDBOX_TAR
     && cp sandbox.sh ${SANDBOX_TARGET_DIR}/bin/sandbox.sh \
     && cp install-local.sh ${SANDBOX_TARGET_DIR}/install-local.sh
 
-# sandbox's version
+# 设置sandbox的版本
 SANDBOX_VERSION=$(cat ..//sandbox-core/target/classes/com/alibaba/jvm/sandbox/version)
 echo "${SANDBOX_VERSION}" > ${SANDBOX_TARGET_DIR}/cfg/version
 
