@@ -57,7 +57,6 @@ public class SkipZlbAuthModule implements Module, ModuleLifecycle {
         System.out.println("开始加载SkipZlbAuthModule");
         log.info("开始加载SkipZlbAuthModule");
 
-        // LogbackUtils.init("logback.xml");
         // 关键代码
         final EventWatcher watcher = new EventWatchBuilder(eventWatcher, REGEX)
                 // 监控的类
@@ -93,7 +92,7 @@ public class SkipZlbAuthModule implements Module, ModuleLifecycle {
 
     private void handleBeforeEvent(BeforeEvent beforeEvent) throws Exception {
         // 注释掉：这里如果是HttpServletRequest、HttpServletResponse会报序列化错误
-        // log.info("拦截方法:{}#{}, 入参:{}", beforeEvent.javaClassName, beforeEvent.javaMethodName, JSON.toJSONString(beforeEvent.argumentArray));
+        log.info("拦截方法:{}#{}", beforeEvent.javaClassName, beforeEvent.javaMethodName);
 
         if ("checkUser".equals(beforeEvent.javaMethodName)) {
             // 注意：这里要使用目标类的类加载器来创建实例，不然可能会出现其他的问题
