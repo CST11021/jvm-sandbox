@@ -1,4 +1,5 @@
 #!/bin/bash
+# 脚本说明: 将模块打成jar包，并复制到~/.sandbox-module目录下
 
 # 定义sandbox的 target 目录
 SANDBOX_USER_MODULE_DIR=${HOME}/.sandbox-module

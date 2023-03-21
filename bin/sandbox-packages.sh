@@ -51,17 +51,17 @@ cp ../sandbox-mgr-module/target/sandbox-mgr-module-*-jar-with-dependencies.jar $
 chmod +x ${SANDBOX_TARGET_DIR}/*.sh
 
 
-# zip the sandbox.zip
+# 给target文件夹打包成例如sandbox-1.3.3-bin.zip的压缩包
 cd ../target/
 zip -r sandbox-${SANDBOX_VERSION}-bin.zip sandbox/
 cd -
 
-# tar the sandbox.tar
+# 给target文件夹打包成例如sandbox-1.3.3-bin.tar的压缩包
 cd ../target/
 tar -zcvf sandbox-${SANDBOX_VERSION}-bin.tar sandbox/
 cd -
 
-# release stable version
+# 发布稳定版本，命名为: sandbox-stable-bin.zip 和 sandbox-stable-bin.tar
 cp ../target/sandbox-${SANDBOX_VERSION}-bin.zip ../target/sandbox-stable-bin.zip
 cp ../target/sandbox-${SANDBOX_VERSION}-bin.tar ../target/sandbox-stable-bin.tar
 
